@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X, UserCheck, Lock, Mail } from 'lucide-react';
+import { toast } from 'react-toastify'; // <-- Add this line
 
 const UserModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
   const [formData, setFormData] = useState({
@@ -25,7 +26,21 @@ const UserModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X size={20}/></button>
         </div>
         
-        <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="p-6 space-y-5">
+          <form
+              onSubmit={(e) => {
+                e.preventDefault();
+
+                // Password validation
+                if ((mode === 'add' || (mode === 'edit' && formData.password)) && formData.password.length < 6) {
+                  toast.error("Password must be at least 6 characters long");
+                  return; // stop submission
+                }
+
+                onSubmit(formData);
+              }}
+              className="p-6 space-y-5"
+            >
+
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Username</label>
             <input required disabled={isReadOnly} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
@@ -43,8 +58,20 @@ const UserModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
 
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Designation</label>
-            <input disabled={isReadOnly} placeholder="e.g. Optician, Accountant, Manager" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
-              value={formData.designation} onChange={e => setFormData({...formData, designation: e.target.value})} />
+            <select
+              disabled={isReadOnly}
+              value={formData.designation || ''}
+              onChange={e => setFormData({ ...formData, designation: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+            >
+              <option value="" disabled>Select designation</option>
+              <option value="Optician">Optician</option>
+              <option value="Accountant">Accountant</option>
+              <option value="Manager">Manager</option>
+              <option value="Staff">Staff</option>
+              <option value="Admin">Admin</option>
+              {/* Add more options as needed */}
+            </select>
           </div>
 
           {(mode === 'add' || mode === 'edit') && (

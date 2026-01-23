@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Eye, Edit3, Trash2, ShieldCheck } from 'lucide-react';
 import UserModal from '../components/UserModal';
 import { userService } from "../api/services/userService";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -22,13 +24,15 @@ export default function Users() {
     try {
       if (modalState.mode === 'edit') {
         await userService.updateUser(modalState.data.id, formData);
+          toast.success(`User "${formData.username}" updated successfully`);
       } else {
         await userService.createUser(formData);
+                  toast.success(`User "${formData.username}" Created successfully`);
       }
       closeModal();
       loadUsers();
     } catch (err) {
-      alert("Could not save user. Ensure email is unique.");
+            toast.error("Failed to save/update user");
     }
   };
 
@@ -40,7 +44,10 @@ export default function Users() {
       try {
         await userService.deleteUser(id);
         loadUsers();
-      } catch (err) { console.error("Delete failed", err); }
+              toast.success("User deleted successfully");
+      } catch (err) {
+         console.error("Delete failed", err); 
+              toast.error("Failed to delete user");}
     }
   };
 
@@ -82,11 +89,27 @@ export default function Users() {
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="flex justify-end gap-2">
-                    <button onClick={() => openModal('view', user)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"><Eye size={18} /></button>
-                    <button onClick={() => openModal('edit', user)} className="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-all"><Edit3 size={18} /></button>
-                    <button onClick={() => handleDelete(user.id)} className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"><Trash2 size={18} /></button>
-                  </div>
+                 <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => openModal('view', user)}
+                    className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                  >
+                    <Eye size={18} />
+                  </button>
+                  <button
+                    onClick={() => openModal('edit', user)}
+                    className="p-2 text-amber-500 hover:bg-amber-50 rounded-lg transition-all"
+                  >
+                    <Edit3 size={18} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(user.id)}
+                    className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+
                 </td>
               </tr>
             ))}
@@ -101,6 +124,8 @@ export default function Users() {
         initialData={modalState.data}
         mode={modalState.mode}
       />
+
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { authService } from "../api/services/authService";
 import { 
   LayoutDashboard, Receipt, ShoppingCart, 
   UsersRound, BarChart3, Package, Users,
@@ -22,8 +23,9 @@ const DashboardLayout = () => {
   ];
 
   const handleLogout = () => {
-    // Add any cleanup like clearing localStorage here
-    navigate('/');
+    authService.logout();
+    // navigate("/");
+    navigate("/", { replace: true });
   };
 
   return (
