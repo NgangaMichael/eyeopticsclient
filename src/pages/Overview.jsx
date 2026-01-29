@@ -4,6 +4,8 @@ import {
   AlertCircle, ArrowUpRight, ArrowDownRight,
   Eye, Calendar, DollarSign 
 } from 'lucide-react';
+const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+const username = storedUser.username || "User";
 
 const Overview = () => {
   // Mock data for the dashboard
@@ -19,7 +21,7 @@ const Overview = () => {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Welcome back, Admin</h1>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Welcome back, {username}</h1>
           <p className="text-slate-500 font-medium">Here's what's happening with EyeOptics today.</p>
         </div>
         <button className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-600 transition-all shadow-lg shadow-slate-200 text-sm font-bold">

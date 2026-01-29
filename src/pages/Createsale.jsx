@@ -1,19 +1,17 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Plus, Eye, Edit3, Trash2, Search, Box, Calendar } from 'lucide-react';
+import { Plus, Eye, Search, Filter, Box } from 'lucide-react';
 import StockModal from '../components/StockModal';
 import { stockService } from "../api/services/stockService";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-export default function Stocks() {
+export default function Createsale() {
   const [stocks, setStocks] = useState([]);
   const [modalState, setModalState] = useState({ isOpen: false, mode: 'add', data: null });
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
 
   useEffect(() => { loadStocks(); }, []);
 
@@ -35,13 +33,9 @@ export default function Stocks() {
       
       const matchesType = typeFilter === 'all' || item.type === typeFilter;
 
-      const createdAt = new Date(item.createdAt).getTime();
-      const fromOk = dateFrom ? createdAt >= new Date(dateFrom).getTime() : true;
-      const toOk = dateTo ? createdAt <= new Date(dateTo).setHours(23, 59, 59, 999) : true;
-
-      return matchesSearch && matchesType && fromOk && toOk;
+      return matchesSearch && matchesType;
     });
-  }, [stocks, searchTerm, typeFilter, dateFrom, dateTo]);
+  }, [stocks, searchTerm, typeFilter]);
 
   // Unique types for the dropdown
   const categories = useMemo(() => {
@@ -53,10 +47,10 @@ export default function Stocks() {
     try {
       if (modalState.mode === 'edit') {
         await stockService.updateStock(modalState.data.id, formData);
-        toast.success(`Item "${formData.name}" updated successfully`);
+        toast.success(`Item updated successfully`);
       } else {
         await stockService.createStock(formData);
-        toast.success(`Item "${formData.name}" added successfully`);
+        toast.success(`Item added successfully`);
       }
       closeModal();
       loadStocks();
@@ -68,71 +62,32 @@ export default function Stocks() {
   const openModal = (mode, data = null) => setModalState({ isOpen: true, mode, data });
   const closeModal = () => setModalState({ ...modalState, isOpen: false });
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this item permanently?")) return;
-    try {
-      await stockService.deleteStock(id);
-      toast.success("Item deleted successfully");
-      loadStocks();
-    } catch {
-      toast.error("Failed to delete item");
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Inventory</h2>
-          <p className="text-slate-500">Monitor and manage your stock levels</p>
+          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Create Sale</h2>
+          <p className="text-slate-500">Search and add items to the current transaction.</p>
         </div>
-        <button onClick={() => openModal('add')}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md flex items-center gap-2">
-          <Plus size={16} /> Add Item
-        </button>
       </div>
 
       {/* Filter Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm items-center">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm items-center">
         
-        {/* Search */}
-        <div className="relative md:col-span-1">
+        {/* Search by Name or Code */}
+        <div className="relative">
           <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
           <input
             type="text"
-            placeholder="Name or code..."
+            placeholder="Search by name or item code..."
             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        {/* Date From */}
-        <div className="relative">
-          <Calendar className="absolute left-3 top-2.5 text-slate-400" size={18} />
-          <input
-            type="date"
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-          />
-          <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">From</span>
-        </div>
-
-        {/* Date To */}
-        <div className="relative">
-          <Calendar className="absolute left-3 top-2.5 text-slate-400" size={18} />
-          <input
-            type="date"
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-          />
-          <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">To</span>
-        </div>
-
-        {/* Type Filter */}
+        {/* Filter by Type */}
         <div className="relative">
           <Box className="absolute left-3 top-2.5 text-slate-400" size={18} />
           <select
@@ -140,26 +95,26 @@ export default function Stocks() {
             onChange={(e) => setTypeFilter(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm appearance-none transition-all"
           >
-            <option value="all">All Types</option>
+            <option value="all">All Types / Categories</option>
             {categories.map(type => (
               <option key={type} value={type}>{type}</option>
             ))}
           </select>
-          <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">Category</span>
+          <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">Item Type</span>
         </div>
 
-        {/* Reset */}
-        <button
-          onClick={() => {
-            setSearchTerm('');
-            setTypeFilter('all');
-            setDateFrom('');
-            setDateTo('');
-          }}
-          className="text-sm font-bold text-slate-400 hover:text-rose-500 transition-colors uppercase tracking-tight"
-        >
-          Reset
-        </button>
+        {/* Reset Filters */}
+        <div className="flex justify-center md:justify-end">
+          <button
+            onClick={() => {
+              setSearchTerm('');
+              setTypeFilter('all');
+            }}
+            className="text-sm font-bold text-slate-400 hover:text-indigo-600 transition-colors uppercase tracking-tight"
+          >
+            Clear Filters
+          </button>
+        </div>
       </div>
 
       {/* Table Section */}
@@ -169,7 +124,7 @@ export default function Stocks() {
             <tr>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Name / Code</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Type</th>
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Qty</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Stock Qty</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Price (USD / KSh)</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
             </tr>
@@ -180,7 +135,7 @@ export default function Stocks() {
                 <tr key={item.id} className="hover:bg-slate-50 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="font-bold text-slate-800">{item.name}</div>
-                    <div className="text-xs text-indigo-500 font-mono bg-indigo-50 px-1.5 py-0.5 rounded inline-block mt-1">
+                    <div className="text-xs font-mono text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded inline-block">
                       {item.code}
                     </div>
                   </td>
@@ -190,14 +145,9 @@ export default function Stocks() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className={`font-bold ${item.qty <= 10 ? 'text-rose-600' : 'text-slate-700'}`}>
-                        {item.qty}
-                      </span>
-                      {item.qty <= 10 && (
-                        <span className="text-[10px] font-bold text-rose-400 uppercase">Low Stock</span>
-                      )}
-                    </div>
+                    <span className={`font-semibold ${item.qty <= 5 ? 'text-rose-500' : 'text-slate-700'}`}>
+                      {item.qty}
+                    </span>
                   </td>
                   <td className="px-6 py-4 text-sm">
                     <div className="text-slate-900 font-bold">
@@ -207,19 +157,20 @@ export default function Stocks() {
                       ${Number(item.priceUsd || 0).toFixed(2)}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => openModal('view', item)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all"><Eye size={18} /></button>
-                      <button onClick={() => openModal('edit', item)} className="p-2 text-amber-500 hover:bg-amber-50 rounded-lg transition-all"><Edit3 size={18} /></button>
-                      <button onClick={() => handleDelete(item.id)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"><Trash2 size={18} /></button>
-                    </div>
+                  <td className="px-6 py-4 text-right">
+                    <button 
+                      onClick={() => openModal('view', item)} 
+                      className="bg-indigo-50 text-indigo-600 p-2 rounded-xl hover:bg-indigo-600 hover:text-white transition-all inline-flex items-center gap-2 font-bold text-xs"
+                    >
+                      <Plus size={16} /> Add to Cart
+                    </button>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
                 <td colSpan={5} className="px-6 py-10 text-center text-slate-400 font-medium">
-                  No stock items found matching your criteria.
+                  No items found matching your search.
                 </td>
               </tr>
             )}

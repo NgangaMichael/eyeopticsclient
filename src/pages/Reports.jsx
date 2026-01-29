@@ -5,7 +5,7 @@ import { expenseService } from "../api/services/expenseService";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-export default function Expenses() {
+export default function Reports() {
   const [expenses, setExpenses] = useState([]);
   const [modalState, setModalState] = useState({ isOpen: false, mode: 'add', data: null });
   const [filters, setFilters] = useState({
@@ -99,7 +99,6 @@ const totalAmount = React.useMemo(() => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Expenses</h2>
@@ -107,66 +106,59 @@ const totalAmount = React.useMemo(() => {
         </div>
         <button 
           onClick={() => openModal('add')}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md flex items-center gap-2"
+          className="bg-indigo-600 text-white px-3 py-1.5 text-sm rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md flex items-center gap-1.5"
         >
           <Plus size={16} /> Add Expense
         </button>
       </div>
 
-      {/* Filter Bar - Styled to match Customers page */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm items-center">
-        
-        {/* Date From */}
-        <div className="relative">
-          {/* <Calendar className="absolute left-3 top-2.5 text-slate-400" size={18} /> */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-4 flex flex-wrap gap-4 items-end">
+        {/* From */}
+        <div>
+          <label className="block text-xs font-bold text-slate-500 mb-1">From</label>
           <input
             type="date"
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
             value={filters.from}
             onChange={e => setFilters({ ...filters, from: e.target.value })}
+            className="border rounded-lg px-3 py-2 text-sm"
           />
-          <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">From</span>
         </div>
 
-        {/* Date To */}
-        <div className="relative">
-          {/* <Calendar className="absolute left-3 top-2.5 text-slate-400" size={18} /> */}
+        {/* To */}
+        <div>
+          <label className="block text-xs font-bold text-slate-500 mb-1">To</label>
           <input
             type="date"
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
             value={filters.to}
             onChange={e => setFilters({ ...filters, to: e.target.value })}
+            className="border rounded-lg px-3 py-2 text-sm"
           />
-          <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">To</span>
         </div>
 
-        {/* Category Select */}
-        <div className="relative">
+        {/* Category */}
+        <div>
+          <label className="block text-xs font-bold text-slate-500 mb-1">Category</label>
           <select
             value={filters.category}
             onChange={e => setFilters({ ...filters, category: e.target.value })}
-            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm appearance-none transition-all"
+            className="border rounded-lg px-3 py-2 text-sm"
           >
-            <option value="all">All Categories</option>
+            <option value="all">All</option>
             {categories.map(cat => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
-          <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">Category</span>
         </div>
 
-        {/* Reset Button */}
-        <div className="flex justify-center md:justify-end">
-          <button
-            onClick={() => setFilters({ from: '', to: '', category: 'all' })}
-            className="text-sm font-bold text-slate-400 hover:text-rose-500 transition-colors uppercase tracking-tight"
-          >
-            Reset Filters
-          </button>
-        </div>
+        {/* Reset */}
+        <button
+          onClick={() => setFilters({ from: '', to: '', category: 'all' })}
+          className="ml-auto text-sm font-bold text-slate-600 hover:text-slate-900"
+        >
+          Reset Filters
+        </button>
       </div>
 
-      {/* Table Section */}
       <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
         <table className="w-full text-left">
           <thead className="bg-slate-50 border-b border-slate-100">
@@ -178,9 +170,8 @@ const totalAmount = React.useMemo(() => {
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
-            {filteredExpenses.length > 0 ? (
-              filteredExpenses.map((expense) => (
+            <tbody className="divide-y divide-slate-50">
+              {filteredExpenses.map((expense) => (
                 <tr key={expense.id} className="hover:bg-slate-50 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="font-bold text-slate-800">{expense.title}</div>
@@ -194,14 +185,19 @@ const totalAmount = React.useMemo(() => {
                       {Number(expense.amount).toLocaleString()}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-slate-700">
-                    {expense.note || '-'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-500">
-                    {new Date(expense.createdAt).toLocaleDateString()}
+                  <td className="px-6 py-4">
+                    <span className="text-slate-700">
+                      {expense.note}
+                    </span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex justify-end gap-2">
+                    <span className="text-slate-700">
+                      {new Date(expense.createdAt).toLocaleString()}
+                    </span>
+                  </td>
+                  {/* ... rest of the rows (Actions) */}
+                  <td className="px-6 py-4">
+                    <div className="flex justify-end gap-3">
                       <button onClick={() => openModal('view', expense)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all">
                         <Eye size={18} />
                       </button>
@@ -213,19 +209,10 @@ const totalAmount = React.useMemo(() => {
                       </button>
                     </div>
                   </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={5} className="px-6 py-10 text-center text-slate-400 font-medium">
-                  No expenses found matching your criteria.
-                </td>
-              </tr>
-            )}
-          </tbody>
+            </tr>
+          ))}
+        </tbody>
         </table>
-
-        {/* Footer Summary */}
         <div className="flex justify-end p-4 border-t bg-slate-50">
           <div className="text-right">
             <p className="text-xs font-bold text-slate-500 uppercase">Total</p>
@@ -243,7 +230,7 @@ const totalAmount = React.useMemo(() => {
         initialData={modalState.data}
         mode={modalState.mode}
       />
-      
+
       <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );

@@ -4,12 +4,13 @@ import { toast } from 'react-toastify'; // <-- Add this line
 
 const UserModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
   const [formData, setFormData] = useState({
-    username: '', email: '', designation: '', password: ''
+    username: '', email: '', phone: '', designation: '', password: '' // Added phone
   });
 
   useEffect(() => {
-    if (initialData) setFormData({ ...initialData, password: '' }); // Don't populate password field
-    else setFormData({ username: '', email: '', designation: '', password: '' });
+    // Reset or populate data including phone
+    if (initialData) setFormData({ ...initialData, password: '' });
+    else setFormData({ username: '', email: '', phone: '', designation: '', password: '' });
   }, [initialData, isOpen]);
 
   if (!isOpen) return null;
@@ -17,7 +18,7 @@ const UserModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
         <div className="p-6 border-b border-slate-100 flex justify-between items-center">
           <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
             <UserCheck size={20} className="text-indigo-600" />
@@ -26,43 +27,58 @@ const UserModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X size={20}/></button>
         </div>
         
-          <form
-              onSubmit={(e) => {
-                e.preventDefault();
-
-                // Password validation
-                if ((mode === 'add' || (mode === 'edit' && formData.password)) && formData.password.length < 6) {
-                  toast.error("Password must be at least 6 characters long");
-                  return; // stop submission
-                }
-
-                onSubmit(formData);
-              }}
-              className="p-6 space-y-5"
-            >
-
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if ((mode === 'add' || (mode === 'edit' && formData.password)) && formData.password.length < 6) {
+              toast.error("Password must be at least 6 characters long");
+              return;
+            }
+            onSubmit(formData);
+          }}
+          className="p-6 space-y-5"
+        >
+          {/* Row 1: Username */}
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Username</label>
-            <input required disabled={isReadOnly} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+            <input required disabled={isReadOnly} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-slate-50"
               value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} />
           </div>
 
-          <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Email Address</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 text-slate-400" size={16} />
-              <input type="email" required disabled={isReadOnly} className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
-                value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+          {/* Row 2: Email and Phone Number (Flexible Grid) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 text-slate-400" size={16} />
+                <input type="email" required disabled={isReadOnly} className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-slate-50"
+                  value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Phone Number</label>
+              <input 
+                type="tel" 
+                required 
+                disabled={isReadOnly} 
+                placeholder="e.g. +254..."
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-slate-50"
+                value={formData.phone || ''} 
+                onChange={e => setFormData({...formData, phone: e.target.value})} 
+              />
             </div>
           </div>
 
+          {/* Row 3: Designation */}
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Designation</label>
             <select
               disabled={isReadOnly}
+              required
               value={formData.designation || ''}
               onChange={e => setFormData({ ...formData, designation: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white disabled:bg-slate-50"
             >
               <option value="" disabled>Select designation</option>
               <option value="Optician">Optician</option>
@@ -70,10 +86,10 @@ const UserModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
               <option value="Manager">Manager</option>
               <option value="Staff">Staff</option>
               <option value="Admin">Admin</option>
-              {/* Add more options as needed */}
             </select>
           </div>
 
+          {/* Row 4: Password (Optional in Edit) */}
           {(mode === 'add' || mode === 'edit') && (
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
@@ -81,8 +97,13 @@ const UserModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 text-slate-400" size={16} />
-                <input type="password" required={mode === 'add'} className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
-                  value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+                <input 
+                  type="password" 
+                  required
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                  value={formData.password} 
+                  onChange={e => setFormData({...formData, password: e.target.value})} 
+                />
               </div>
             </div>
           )}

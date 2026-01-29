@@ -67,15 +67,13 @@ const Login = () => {
         {/* Left Side: Brand Story */}
         <div className="w-full md:w-1/2 text-white space-y-6">
           <div className="">
-  <img
-    src={Logo}
-    alt="EyeOptics Logo"
-    className="w-32 h-32 object-contain"
-  />
-</div>
-
-
-          
+          <img
+            src={Logo}
+            alt="EyeOptics Logo"
+            className="w-32 h-32 object-contain"
+          />
+        </div>
+     
           <h1 className="text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1]">
             Personal Eye, <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">

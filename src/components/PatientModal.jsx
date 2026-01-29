@@ -58,7 +58,22 @@ const PatientModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
                 <option value="Other">Other</option>
               </select>
             </div>
-            <div className="col-span-2">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                Date of Birth
+              </label>
+              <input
+                type="date"
+                required
+                disabled={isReadOnly}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-50"
+                value={formData.dob || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, dob: e.target.value })
+                }
+              />
+            </div>
+            <div className="">
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Email Address</label>
               <input type="email" disabled={isReadOnly} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-50"
                 value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} />

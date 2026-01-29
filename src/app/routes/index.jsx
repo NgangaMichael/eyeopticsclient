@@ -11,6 +11,10 @@ import Patients from "../../pages/Patients";
 import Sales from "../../pages/Sales";
 import Stocks from "../../pages/Stocks";
 import Users from "../../pages/Users";
+import Createsale from "../../pages/Createsale";
+import Suppliers from "../../pages/Suppliers";
+import Customers from "../../pages/Customers";
+import Reports from "../../pages/Reports";
 
 export const routes = [
   { path: "/", element: <Login /> },
@@ -29,6 +33,10 @@ export const routes = [
           { path: "patients", element: <Patients /> },
           { path: "sales", element: <Sales /> },
           { path: "stocks", element: <Stocks /> },
+          { path: "createsale", element: <Createsale /> },
+          { path: "suppliers", element: <Suppliers /> },
+          { path: "customers", element: <Customers /> },
+          { path: "reports", element: <Reports /> },
           { path: "users", element: <Users /> },
         ],
       },
