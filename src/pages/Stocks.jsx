@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Plus, Eye, Edit3, Trash2, Search, Box, Calendar } from 'lucide-react';
+import { Plus, Eye, Edit3, Trash2, Search, Box, Calendar, Download } from 'lucide-react';
 import StockModal from '../components/StockModal';
 import { stockService } from "../api/services/stockService";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import * as XLSX from 'xlsx';
 
 export default function Stocks() {
   const [stocks, setStocks] = useState([]);
@@ -79,18 +80,72 @@ export default function Stocks() {
     }
   };
 
+  const exportToExcel = (dataToExport, fileName) => {
+    // 1. Prepare the data (Optional: formatting column headers)
+    const formattedData = dataToExport.map(item => ({
+      'Item Name': item.name,
+      'Code': item.code,
+      'Category': item.type,
+      'Quantity': item.qty,
+      'Price (KSH)': item.priceKsh,
+      'Price (USD)': item.priceUsd,
+      'Supplier': item.supplier,
+      'Date Added': new Date(item.createdAt).toLocaleDateString(),
+    }));
+
+    // 2. Create worksheet
+    const worksheet = XLSX.utils.json_to_sheet(formattedData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory");
+
+    // 3. Download the file
+    XLSX.writeFile(workbook, `${fileName}.xlsx`);
+    toast.success(`${fileName} exported successfully!`);
+  };
+
+  // Helper for Low Stock
+  const exportLowStock = () => {
+    const lowStockItems = stocks.filter(item => item.qty <= 3);
+    if (lowStockItems.length === 0) {
+      return toast.info("No low stock items to export");
+    }
+    exportToExcel(lowStockItems, "Low_Stock_Report");
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
+
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Inventory</h2>
           <p className="text-slate-500">Monitor and manage your stock levels</p>
         </div>
-        <button onClick={() => openModal('add')}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md flex items-center gap-2">
-          <Plus size={16} /> Add Item
-        </button>
+        
+        <div className="flex gap-2">
+          {/* Export All Button */}
+          <button 
+            onClick={() => exportToExcel(stocks, "Full_Inventory_Report")}
+            className="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-100 transition-all flex items-center gap-2 border border-emerald-100"
+          >
+            <Download size={16} /> Export All
+          </button>
+
+          {/* Export Low Stock Button */}
+          <button 
+            onClick={exportLowStock}
+            className="bg-rose-50 text-rose-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-rose-100 transition-all flex items-center gap-2 border border-rose-100"
+          >
+            <Download size={16} /> Export Low Stock
+          </button>
+
+          {/* Add Item Button */}
+          <button onClick={() => openModal('add')}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md flex items-center gap-2"
+          >
+            <Plus size={16} /> Add Item
+          </button>
+        </div>
       </div>
 
       {/* Filter Bar */}
@@ -191,10 +246,10 @@ export default function Stocks() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
-                      <span className={`font-bold ${item.qty <= 10 ? 'text-rose-600' : 'text-slate-700'}`}>
+                      <span className={`font-bold ${item.qty <= 3 ? 'text-rose-600' : 'text-slate-700'}`}>
                         {item.qty}
                       </span>
-                      {item.qty <= 10 && (
+                      {item.qty <= 3 && (
                         <span className="text-[10px] font-bold text-rose-400 uppercase">Low Stock</span>
                       )}
                     </div>

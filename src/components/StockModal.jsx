@@ -7,7 +7,6 @@ const StockModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
     code: '',
     type: '',
     qty: 0,
-    sold: 0,
     priceUsd: 0,
     priceKsh: 0,
     appPrice: 0,
@@ -21,17 +20,16 @@ const StockModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
     loading: 0,
     supplier: '',
     notes: '',
-    imageUrl: ''
   });
 
   useEffect(() => {
     if (initialData) setFormData(initialData);
     else setFormData({
-      name: '', code: '', type: '', qty: 0, sold: 0,
+      name: '', code: '', type: '', qty: 0,
       priceUsd: 0, priceKsh: 0, appPrice: 0,
       costUsd: 0, costKsh: 0, prevCostPb: 0, profitPerBale: 0,
       bought: '', etr: '', fob: 0, loading: 0,
-      supplier: '', notes: '', imageUrl: ''
+      supplier: '', notes: ''
     });
   }, [initialData, isOpen]);
 
@@ -44,6 +42,7 @@ const StockModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
       <input
         type="number"
         disabled={isReadOnly}
+        required={!isReadOnly}
         value={formData[field]}
         onChange={e => setFormData({ ...formData, [field]: Number(e.target.value) })}
         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
@@ -57,6 +56,7 @@ const StockModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
       <input
         type="text"
         disabled={isReadOnly}
+        required={!isReadOnly}
         value={formData[field]}
         onChange={e => setFormData({ ...formData, [field]: e.target.value })}
         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
@@ -86,7 +86,6 @@ const StockModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
             {textInput('Code', 'code')}
             {textInput('Type', 'type')}
             {numberInput('Quantity', 'qty')}
-            {numberInput('Sold', 'sold')}
             {numberInput('Price (USD)', 'priceUsd')}
             {numberInput('Price (KSh)', 'priceKsh')}
             {numberInput('App Price', 'appPrice')}
@@ -95,7 +94,20 @@ const StockModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
             {numberInput('Prev Cost per Bale', 'prevCostPb')}
             {numberInput('Profit per Bale', 'profitPerBale')}
             {textInput('Bought', 'bought')}
-            {textInput('ETR', 'etr')}
+            {/* {textInput('ETR', 'etr')} */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                ETR
+              </label>
+              <input
+                type="date"
+                disabled={isReadOnly}
+                required={!isReadOnly}
+                value={formData.etr}
+                onChange={e => setFormData({ ...formData, etr: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+              />
+            </div>
             {numberInput('FOB', 'fob')}
             {numberInput('Loading', 'loading')}
             {textInput('Supplier', 'supplier')}
@@ -107,17 +119,6 @@ const StockModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
                 value={formData.notes}
                 onChange={e => setFormData({ ...formData, notes: e.target.value })}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-              />
-            </div>
-
-            <div className="col-span-2">
-              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Image URL</label>
-              <input
-                type="text"
-                disabled={isReadOnly}
-                value={formData.imageUrl}
-                onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
               />
             </div>
           </div>
