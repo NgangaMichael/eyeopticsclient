@@ -15,6 +15,7 @@ import Createsale from "../../pages/Createsale";
 import Suppliers from "../../pages/Suppliers";
 import Customers from "../../pages/Customers";
 import Reports from "../../pages/Reports";
+import PatientHistory from "../../pages/PatientHistory";
 
 export const routes = [
   { path: "/", element: <Login /> },
@@ -31,6 +32,7 @@ export const routes = [
           { path: "expenses", element: <Expenses /> },
           { path: "orders", element: <Orders /> },
           { path: "patients", element: <Patients /> },
+          { path: "patients/:id", element: <PatientHistory /> },
           { path: "sales", element: <Sales /> },
           { path: "stocks", element: <Stocks /> },
           { path: "createsale", element: <Createsale /> },
@@ -38,6 +40,7 @@ export const routes = [
           { path: "customers", element: <Customers /> },
           { path: "reports", element: <Reports /> },
           { path: "users", element: <Users /> },
+          
         ],
       },
     ],

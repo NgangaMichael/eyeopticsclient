@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Plus, Eye, Edit3, Trash2, Search, Calendar, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Eye, Edit3, Trash2, Search, Calendar, Users, History } from 'lucide-react';
 import PatientModal from '../components/PatientModal';
 import { patientService } from "../api/services/patientService";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function Patients() {
+  const navigate = useNavigate();
   const [patients, setPatients] = useState([]);
   const [modalState, setModalState] = useState({ isOpen: false, mode: 'add', data: null });
 
@@ -219,6 +221,13 @@ export default function Patients() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex justify-end gap-2">
+                      <button 
+                        onClick={() => navigate(`/dashboard/patients/${patient.id}`)} 
+                        className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all"
+                        title="View Visit History"
+                      >
+                        <History size={18} />
+                      </button>
                       <button onClick={() => openModal('view', patient)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all"><Eye size={18} /></button>
                       <button onClick={() => openModal('edit', patient)} className="p-2 text-amber-500 hover:bg-amber-50 rounded-lg transition-all"><Edit3 size={18} /></button>
                       <button onClick={() => handleDelete(patient.id)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"><Trash2 size={18} /></button>

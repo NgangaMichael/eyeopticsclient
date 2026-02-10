@@ -10,7 +10,7 @@ const OrderModal = ({ isOpen, onClose, onSubmit, initialData, mode, existingStoc
   const [formData, setFormData] = useState({
     name: '', code: '', type: 'Lens', quantityOrdered: '',
     priceUsd: '', priceKsh: '', landedCost: '', 
-    supplierName: '', status: 'pending'
+    supplierName: '', status: 'pending', sph: '', cyl: ''
   });
 
   const isReadOnly = mode === 'view' || formData.status === 'received';
@@ -41,7 +41,7 @@ const OrderModal = ({ isOpen, onClose, onSubmit, initialData, mode, existingStoc
     setFormData({
       name: '', code: '', type: 'Lens', quantityOrdered: '',
       priceUsd: '', priceKsh: '', landedCost: '', 
-      supplierName: '', status: 'pending'
+      supplierName: '', status: 'pending', sph: '', cyl: ''
     });
     setSearchTerm('');
     setIsNewItem(false);
@@ -203,12 +203,43 @@ const OrderModal = ({ isOpen, onClose, onSubmit, initialData, mode, existingStoc
               </div>
             </div>
 
+            {/* Lens Power Fields - Only shown if type is Lens */}
+            {formData.type === 'Lens' && (
+              <>
+                <div>
+                  <label className="text-[10px] font-bold text-indigo-500 uppercase">SPH (Sphere)</label>
+                  <input
+                    type="number"
+                    step="0.25"
+                    placeholder="0.00"
+                    disabled={isReadOnly}
+                    className="w-full px-4 py-3 rounded-xl border border-indigo-100 bg-indigo-50/20 mt-1 outline-none font-bold text-slate-900"
+                    value={formData.sph}
+                    onChange={e => setFormData({ ...formData, sph: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-indigo-500 uppercase">CYL (Cylinder)</label>
+                  <input
+                    type="number"
+                    step="0.25"
+                    placeholder="0.00"
+                    disabled={isReadOnly}
+                    className="w-full px-4 py-3 rounded-xl border border-indigo-100 bg-indigo-50/20 mt-1 outline-none font-bold text-slate-900"
+                    value={formData.cyl}
+                    onChange={e => setFormData({ ...formData, cyl: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
+
             {/* Numeric Fields - All Required */}
             {['quantityOrdered', 'landedCost', 'priceKsh', 'priceUsd'].map((field) => (
               <div key={field}>
                 <label className="text-[10px] font-bold text-slate-500 uppercase">{field.replace(/([A-Z])/g, ' $1')}</label>
                 <input
                   type="number"
+                  step="0.5"
                   required
                   disabled={isReadOnly}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 mt-1 outline-none font-bold text-slate-900"

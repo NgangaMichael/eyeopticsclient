@@ -14,7 +14,7 @@ export const saleService = {
       // Map items to ensure correct data types for Prisma
       items: saleData.items.map(item => ({
         stockId: parseInt(item.stockId),
-        quantity: parseInt(item.quantity),
+        quantity: parseFloat(item.quantity),
         price: parseFloat(item.price)
       })),
       // Total can be calculated here or on the backend

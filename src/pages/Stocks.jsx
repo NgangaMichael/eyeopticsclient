@@ -16,6 +16,9 @@ export default function Stocks() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
+  const [sphSearch, setSphSearch] = useState('');
+  const [cylSearch, setCylSearch] = useState('');
+
   useEffect(() => { loadStocks(); }, []);
 
   const loadStocks = async () => {
@@ -27,22 +30,27 @@ export default function Stocks() {
     }
   };
 
-  // Filter Logic
-  const filteredStocks = useMemo(() => {
-    return stocks.filter(item => {
-      const matchesSearch = 
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.code.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesType = typeFilter === 'all' || item.type === typeFilter;
+// filteredStocks useMemo
+const filteredStocks = useMemo(() => {
+  return stocks.filter(item => {
+    const matchesSearch = 
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.code.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesType = typeFilter === 'all' || item.type === typeFilter;
 
-      const createdAt = new Date(item.createdAt).getTime();
-      const fromOk = dateFrom ? createdAt >= new Date(dateFrom).getTime() : true;
-      const toOk = dateTo ? createdAt <= new Date(dateTo).setHours(23, 59, 59, 999) : true;
+    // SPH & CYL Filter Logic
+    // We use parseFloat to compare numbers, but only if the user has typed something
+    const matchesSph = sphSearch === '' || parseFloat(item.sph) === parseFloat(sphSearch);
+    const matchesCyl = cylSearch === '' || parseFloat(item.cyl) === parseFloat(cylSearch);
 
-      return matchesSearch && matchesType && fromOk && toOk;
-    });
-  }, [stocks, searchTerm, typeFilter, dateFrom, dateTo]);
+    const createdAt = new Date(item.createdAt).getTime();
+    const fromOk = dateFrom ? createdAt >= new Date(dateFrom).getTime() : true;
+    const toOk = dateTo ? createdAt <= new Date(dateTo).setHours(23, 59, 59, 999) : true;
+
+    return matchesSearch && matchesType && fromOk && toOk && matchesSph && matchesCyl;
+  });
+}, [stocks, searchTerm, typeFilter, dateFrom, dateTo, sphSearch, cylSearch]);
 
   // Unique types for the dropdown
   const categories = useMemo(() => {
@@ -140,82 +148,95 @@ export default function Stocks() {
           </button>
 
           {/* Add Item Button */}
-          <button onClick={() => openModal('add')}
+          {/* <button onClick={() => openModal('add')}
             className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md flex items-center gap-2"
           >
             <Plus size={16} /> Add Item
-          </button>
+          </button> */}
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm items-center">
-        
-        {/* Search */}
-        <div className="relative md:col-span-1">
-          <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
-          <input
-            type="text"
-            placeholder="Name or code..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+      {/* Replace your current Filter Bar div with this updated grid */}
+<div className="grid grid-cols-1 md:grid-cols-7 gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm items-center">
+  
+  {/* Search (Takes 2 columns now) */}
+  <div className="relative md:col-span-1">
+    <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+    <input
+      type="text"
+      placeholder="Name/Code..."
+      className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+    />
+  </div>
 
-        {/* Date From */}
-        <div className="relative">
-          <Calendar className="absolute left-3 top-2.5 text-slate-400" size={18} />
-          <input
-            type="date"
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-          />
-          <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">From</span>
-        </div>
+  {/* SPH Search */}
+  <div className="relative">
+    <input
+      type="number"
+      step="0.25"
+      placeholder="0.00"
+      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold"
+      value={sphSearch}
+      onChange={(e) => setSphSearch(e.target.value)}
+    />
+    <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-blue-500 uppercase">SPH</span>
+  </div>
 
-        {/* Date To */}
-        <div className="relative">
-          <Calendar className="absolute left-3 top-2.5 text-slate-400" size={18} />
-          <input
-            type="date"
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-          />
-          <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">To</span>
-        </div>
+  {/* CYL Search */}
+  <div className="relative">
+    <input
+      type="number"
+      step="0.25"
+      placeholder="0.00"
+      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-bold"
+      value={cylSearch}
+      onChange={(e) => setCylSearch(e.target.value)}
+    />
+    <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-emerald-500 uppercase">CYL</span>
+  </div>
 
-        {/* Type Filter */}
-        <div className="relative">
-          <Box className="absolute left-3 top-2.5 text-slate-400" size={18} />
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm appearance-none transition-all"
-          >
-            <option value="all">All Types</option>
-            {categories.map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-          <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">Category</span>
-        </div>
+  {/* Category */}
+  <div className="relative">
+    <select
+      value={typeFilter}
+      onChange={(e) => setTypeFilter(e.target.value)}
+      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm appearance-none"
+    >
+      <option value="all">All</option>
+      {categories.map(type => <option key={type} value={type}>{type}</option>)}
+    </select>
+      <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">Type</span>
+    </div>
 
-        {/* Reset */}
-        <button
-          onClick={() => {
-            setSearchTerm('');
-            setTypeFilter('all');
-            setDateFrom('');
-            setDateTo('');
-          }}
-          className="text-sm font-bold text-slate-400 hover:text-rose-500 transition-colors uppercase tracking-tight"
-        >
-          Reset
-        </button>
-      </div>
+    {/* Date From & To (Keep existing but wrapped for space) */}
+    <div className="relative">
+      <input type="date" className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px]" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+      <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">From</span>
+    </div>
+
+    <div className="relative">
+      <input type="date" className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px]" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+      <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">To</span>
+    </div>
+
+    {/* Reset Button */}
+    <button
+      onClick={() => {
+        setSearchTerm('');
+        setTypeFilter('all');
+        setDateFrom('');
+        setDateTo('');
+        setSphSearch('');
+        setCylSearch('');
+      }}
+      className="text-xs font-bold text-rose-500 uppercase hover:underline"
+    >
+      Reset
+    </button>
+  </div>
 
       {/* Table Section */}
       <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
@@ -237,6 +258,16 @@ export default function Stocks() {
                     <div className="font-bold text-slate-800">{item.name}</div>
                     <div className="text-xs text-indigo-500 font-mono bg-indigo-50 px-1.5 py-0.5 rounded inline-block mt-1">
                       {item.code}
+                      {/* Logic for Lens specific SPH and CYL */}
+                      {item.type?.toLowerCase() === 'lens' && (item.sph !== null || item.cyl !== null) && (
+                        <div className="flex items-center gap-1 bg-slate-800 text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm">
+                          <span className="text-slate-400">SPH:</span> 
+                          <span>{item.sph > 0 ? `+${item.sph}` : item.sph}</span>
+                          <span className="mx-1 text-slate-600">|</span>
+                          <span className="text-slate-400">CYL:</span> 
+                          <span>{item.cyl > 0 ? `+${item.cyl}` : item.cyl}</span>
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4">
