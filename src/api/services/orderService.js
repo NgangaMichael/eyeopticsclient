@@ -15,6 +15,10 @@ export const orderService = {
       // ADDED: Explicitly handle powers
       sph: data.sph ? parseFloat(data.sph) : null,
       cyl: data.cyl ? parseFloat(data.cyl) : null,
+      axis: data.axis ? parseInt(data.axis) : null, 
+      nearAdd: data.nearAdd ? parseFloat(data.nearAdd) : null,
+      lensCategory: data.lensCategory || "Stock",
+
       expectedArrival: data.expectedArrival ? new Date(data.expectedArrival).toISOString() : null,
       status: data.status || "pending"
     };

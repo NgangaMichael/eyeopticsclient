@@ -4,7 +4,7 @@ import SaleModal from '../components/SaleModal';
 import { saleService } from "../api/services/saleService";
 import { toast, ToastContainer } from "react-toastify";
 import { useReactToPrint } from 'react-to-print';
-import PrintableInvoice from '../components/PrintableInvoice'; // Import the template
+import PrintableInvoice from '../components/PrintableInvoice';
 
 export default function Sales() {
   const [sales, setSales] = useState([]);
@@ -173,6 +173,7 @@ export default function Sales() {
                 <td className="px-6 py-4">
                   <span className="font-extrabold text-slate-700">{Number(sale.total).toLocaleString()}</span>
                   <span className="text-[10px] text-slate-400 ml-1">KSH</span>
+                  <div className="text-[10px] text-slate-400">Discount: <span className="font-extrabold text-slate-700">{sale.discount}</span></div>
                 </td>
                 <td className="px-6 py-4">
                   <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-bold">

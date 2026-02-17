@@ -246,16 +246,31 @@ export default function Orders() {
                       <div className="font-bold text-slate-800">{order.supplierName}</div>
                       <div className="text-[10px] font-bold uppercase text-indigo-500">
                         {order.type} <span className="text-slate-300 mx-1">|</span> {order.code} 
-                        {/* Logic for Lens specific SPH and CYL */}
-                        {order.type?.toLowerCase() === 'lens' && (order.sph !== null || order.cyl !== null) && (
-                          <div className="flex items-center gap-1 bg-slate-800 text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm">
-                            <span className="text-slate-400">SPH:</span> 
-                            <span>{order.sph > 0 ? `+${order.sph}` : order.sph}</span>
-                            <span className="mx-1 text-slate-600">|</span>
-                            <span className="text-slate-400">CYL:</span> 
-                            <span>{order.cyl > 0 ? `+${order.cyl}` : order.cyl}</span>
-                          </div>
-                        )}                   
+                        {/* In Orders.js Table Body */}
+                          {order.type?.toLowerCase() === 'lens' && (
+                            <div className="flex flex-wrap items-center gap-1 mt-1">
+                              <span className="bg-slate-800 text-white px-1.5 py-0.5 rounded text-[9px] font-bold">
+                                {order.lensCategory}
+                              </span>
+                              <div className="flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md text-[10px] font-bold border border-indigo-100">
+                                <span>S: {order.sph}</span>
+                                <span className="text-indigo-200">|</span>
+                                <span>C: {order.cyl}</span>
+                                {order.axis && (
+                                  <>
+                                    <span className="text-indigo-200">|</span>
+                                    <span>A: {order.axis}°</span>
+                                  </>
+                                )}
+                                {order.nearAdd && (
+                                  <>
+                                    <span className="text-indigo-200">|</span>
+                                    <span>Add: {order.nearAdd}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          )}                
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-slate-600">

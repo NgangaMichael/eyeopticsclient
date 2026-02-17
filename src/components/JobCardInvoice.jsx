@@ -10,6 +10,10 @@ const JobCardInvoice = React.forwardRef(({ card, patient }, ref) => {
   const lQty = Number(card.lensQty || 0);
   const fPrice = Number(card.framePrice || 0);
   const fQty = Number(card.frameQty || 0);
+  const discount = Number(card.discount || 0);
+
+  // Calculate gross total before discount
+  const grossTotal = consultation + (lPrice * lQty) + (fPrice * fQty);
 
   return (
     <div ref={ref} className="p-12 bg-white text-slate-800 font-sans min-h-[1050px] flex flex-col">
@@ -46,26 +50,38 @@ const JobCardInvoice = React.forwardRef(({ card, patient }, ref) => {
           <div className="mt-2 space-y-1 text-sm text-slate-600 font-medium">
             <p className="flex items-center gap-2"><span>📞</span> {patient.phone}</p>
             {patient.email && <p className="flex items-center gap-2"><span>✉️</span> {patient.email}</p>}
-            {patient.address && <p className="flex items-center gap-2"><span>📍</span> {patient.address}</p>}
+            <p className="flex items-center gap-2"><span>💳</span> {card.insuranceCompany || "Private Pay"}</p>
           </div>
         </div>
         
         <div className="border border-slate-100 p-6 rounded-3xl">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest text-right">Prescription (RX)</h3>
-          <div className="grid grid-cols-2 gap-4 text-[11px] font-mono">
-            <div className="bg-white p-2 rounded-lg border border-slate-50">
-              <p className="font-bold text-indigo-600 border-b mb-1">RIGHT (OD)</p>
-              <p>SPH: {card.rSph || '0.00'}</p>
-              <p>CYL: {card.rCyl || '0.00'}</p>
-              <p>AXIS: {card.rAxis || '0'}°</p>
-            </div>
-            <div className="bg-white p-2 rounded-lg border border-slate-50">
-              <p className="font-bold text-indigo-600 border-b mb-1">LEFT (OS)</p>
-              <p>SPH: {card.lSph || '0.00'}</p>
-              <p>CYL: {card.lCyl || '0.00'}</p>
-              <p>AXIS: {card.lAxis || '0'}°</p>
-            </div>
-          </div>
+          <h3 className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest text-right">Prescription (RX)</h3>
+          <table className="w-full text-[10px] font-mono border-collapse">
+            <thead>
+              <tr className="border-b text-slate-400">
+                <th className="text-left font-normal pb-1">Eye</th>
+                <th className="pb-1">SPH</th>
+                <th className="pb-1">CYL</th>
+                <th className="pb-1">AXIS</th>
+                <th className="pb-1">ADD</th>
+              </tr>
+            </thead>
+            <tbody className="text-center">
+              <tr className="border-b border-slate-50">
+                <td className="text-left font-bold py-2">OD</td>
+                <td>{card.rSph || '0.00'}</td>
+                <td>{card.rCyl || '0.00'}</td>
+                <td>{card.rAxis ? `${card.rAxis}°` : '-'}</td>
+                <td rowSpan="2" className="align-middle bg-slate-50 font-bold border-l">{card.nearAdd || '-'}</td>
+              </tr>
+              <tr>
+                <td className="text-left font-bold py-2">OS</td>
+                <td>{card.lSph || '0.00'}</td>
+                <td>{card.lCyl || '0.00'}</td>
+                <td>{card.lAxis ? `${card.lAxis}°` : '-'}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -126,15 +142,29 @@ const JobCardInvoice = React.forwardRef(({ card, patient }, ref) => {
       {/* Financial Summary */}
       <div className="flex justify-end mt-8">
         <div className="w-80 space-y-3 bg-slate-50 p-8 rounded-[2rem]">
-          <div className="flex justify-between text-sm">
-            <span className="font-bold text-slate-500 uppercase tracking-tight">Grand Total</span>
+          <div className="flex justify-between text-xs font-bold text-slate-400">
+            <span>GROSS TOTAL</span>
+            <span>Ksh {grossTotal.toLocaleString()}</span>
+          </div>
+
+          {discount > 0 && (
+            <div className="flex justify-between text-xs font-bold text-rose-500">
+              <span>DISCOUNT</span>
+              <span>- Ksh {discount.toLocaleString()}</span>
+            </div>
+          )}
+
+          <div className="flex justify-between text-sm pt-2 border-t border-slate-200">
+            <span className="font-bold text-slate-500 uppercase tracking-tight">Net Total</span>
             <span className="font-black text-slate-900 text-lg">Ksh {Number(card.total).toLocaleString()}</span>
           </div>
-          <div className="flex justify-between text-sm text-emerald-600 border-t border-slate-200 pt-3">
+          
+          <div className="flex justify-between text-sm text-emerald-600">
             <span className="font-bold uppercase tracking-tight">Amount Paid</span>
             <span className="font-black">Ksh {Number(card.advance).toLocaleString()}</span>
           </div>
-          <div className="flex justify-between text-lg text-white bg-rose-500 p-4 rounded-2xl shadow-lg shadow-rose-200">
+
+          <div className="flex justify-between text-lg text-white bg-rose-500 p-4 rounded-2xl shadow-lg shadow-rose-200 mt-4">
             <span className="font-black uppercase text-xs self-center">Balance Due</span>
             <span className="font-black">Ksh {Number(card.balance).toLocaleString()}</span>
           </div>
@@ -149,7 +179,8 @@ const JobCardInvoice = React.forwardRef(({ card, patient }, ref) => {
             <ul className="list-disc pl-4 space-y-1">
               <li>Lenses once processed cannot be returned or exchanged.</li>
               <li>Warranty covers manufacturing defects only.</li>
-              <li>Balance must be cleared upon collection.</li>
+              <li>Balance must be cleared upon collection of eyewear.</li>
+              <li>Collection Date: <span className="font-bold text-slate-600">{card.jobDelDate ? new Date(card.jobDelDate).toLocaleDateString('en-GB') : 'To be advised'}</span></li>
             </ul>
           </div>
           <div className="text-right flex flex-col justify-end">

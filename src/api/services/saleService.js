@@ -8,20 +8,23 @@ export const saleService = {
    * @param {Object} saleData - contains customerId and items array
    * items: [{ stockId: 1, quantity: 2, price: 5000 }]
    */
-  async createSale(saleData) {
+  // src/api/services/saleService.js
+
+async createSale(saleData) {
     const payload = {
       customerId: parseInt(saleData.customerId),
-      // Map items to ensure correct data types for Prisma
+      // Pass the discount through to the backend
+      discount: parseFloat(saleData.discount || 0), 
       items: saleData.items.map(item => ({
         stockId: parseInt(item.stockId),
         quantity: parseFloat(item.quantity),
         price: parseFloat(item.price)
-      })),
-      // Total can be calculated here or on the backend
-      total: saleData.items.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0)
+      }))
+      // REMOVED 'total' calculation here—let the backend repo do it to ensure consistency
     };
     return (await SaleAPI.create(payload)).data;
   },
+
   async getSaleDetails(id) {
     return (await SaleAPI.getById(id)).data;
   },

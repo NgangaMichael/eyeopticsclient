@@ -259,13 +259,55 @@ const filteredStocks = useMemo(() => {
                     <div className="text-xs text-indigo-500 font-mono bg-indigo-50 px-1.5 py-0.5 rounded inline-block mt-1">
                       {item.code}
                       {/* Logic for Lens specific SPH and CYL */}
-                      {item.type?.toLowerCase() === 'lens' && (item.sph !== null || item.cyl !== null) && (
+                      {/* {item.type?.toLowerCase() === 'lens' && (item.sph !== null || item.cyl !== null) && (
                         <div className="flex items-center gap-1 bg-slate-800 text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm">
                           <span className="text-slate-400">SPH:</span> 
                           <span>{item.sph > 0 ? `+${item.sph}` : item.sph}</span>
                           <span className="mx-1 text-slate-600">|</span>
                           <span className="text-slate-400">CYL:</span> 
                           <span>{item.cyl > 0 ? `+${item.cyl}` : item.cyl}</span>
+                        </div>
+                      )} */}
+                      {item.type?.toLowerCase() === 'lens' && (
+                        <div className="flex flex-col gap-1 mt-1">
+                          {/* Lens Category Badge */}
+                          {item.lensCategory && (
+                            <span className="w-fit bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider border border-indigo-200">
+                              {item.lensCategory}
+                            </span>
+                          )}
+
+                          {/* Prescription Details Pill */}
+                          {(item.sph !== null || item.cyl !== null || item.axis || item.nearAdd) && (
+                            <div className="flex items-center gap-1 bg-slate-800 text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm w-fit">
+                              {/* SPH */}
+                              <span className="text-slate-400">SPH:</span>
+                              <span>{item.sph > 0 ? `+${item.sph}` : item.sph}</span>
+                              
+                              {/* CYL */}
+                              <span className="mx-1 text-slate-600">|</span>
+                              <span className="text-slate-400">CYL:</span>
+                              <span>{item.cyl > 0 ? `+${item.cyl}` : item.cyl}</span>
+
+                              {/* AXIS - Only show if present */}
+                              {item.axis && (
+                                <>
+                                  <span className="mx-1 text-slate-600">|</span>
+                                  <span className="text-slate-400">AX:</span>
+                                  <span>{item.axis}°</span>
+                                </>
+                              )}
+
+                              {/* NEAR ADD - Only show if present */}
+                              {item.nearAdd && (
+                                <>
+                                  <span className="mx-1 text-slate-600">|</span>
+                                  <span className="text-slate-400">ADD:</span>
+                                  <span>{item.nearAdd > 0 ? `+${item.nearAdd}` : item.nearAdd}</span>
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

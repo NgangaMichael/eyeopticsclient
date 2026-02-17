@@ -86,7 +86,7 @@ const StockModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
             {textInput('Code', 'code')}
             {textInput('Type', 'type')}
             {numberInput('Quantity', 'qty')}
-            {numberInput('Price (USD)', 'priceUsd')}
+            {/* {numberInput('Price (USD)', 'priceUsd')} */}
             {numberInput('Price (KSh)', 'priceKsh')}
             {numberInput('App Price', 'appPrice')}
             {numberInput('Cost (USD)', 'costUsd')}

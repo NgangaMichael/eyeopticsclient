@@ -10,6 +10,7 @@ export default function Createsale() {
   const [stocks, setStocks] = useState([]);
   const [cart, setCart] = useState([]);
   const [customerId, setCustomerId] = useState('');
+  const [discount, setDiscount] = useState(0);
   
   // Filter States
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,23 +56,32 @@ export default function Createsale() {
     setCart([...cart, { ...item, cartQty: 1, cartPrice: item.priceKsh }]);
   };
 
-  const updateCartQty = (id, newQty, maxQty) => {
-    // Use parseFloat instead of parseInt
-    const parsedQty = parseFloat(newQty) || 0; 
+  const updateCartQty = (id, newQty, maxQty, type) => {
+    const isLens = type?.toLowerCase() === 'lens';
+    const parsedQty = parseFloat(newQty) || 0;
     
-    // Allow values like 0.5, but keep the bounds between 0 and stock max
-    const val = Math.max(0, Math.min(parsedQty, maxQty)); 
+    // 1. Determine the increment step based on type
+    // If it's a frame, we force it to a whole number (Integer)
+    // If it's a lens, we allow the decimal provided
+    let val = parsedQty;
+    
+    if (!isLens) {
+      val = Math.round(parsedQty); // Force frames to 1, 2, 3...
+    }
+
+    // 2. Keep the bounds between 0 and stock max
+    const finalVal = Math.max(0, Math.min(val, maxQty));
     
     if (parsedQty > maxQty) toast.warning(`Only ${maxQty} units available`);
     
-    setCart(cart.map(item => item.id === id ? { ...item, cartQty: val } : item));
+    setCart(cart.map(item => item.id === id ? { ...item, cartQty: finalVal } : item));
   };
 
   const removeFromCart = (id) => {
     setCart(cart.filter(item => item.id !== id));
   };
 
-  const calculateTotal = () => {
+  const calculateSubtotal = () => {
     return cart.reduce((acc, item) => acc + (item.cartQty * item.cartPrice), 0);
   };
 
@@ -82,6 +92,7 @@ export default function Createsale() {
     try {
       const saleData = {
         customerId,
+        discount: parseFloat(discount) || 0,
         items: cart.map(item => ({
           stockId: item.id,
           quantity: item.cartQty,
@@ -91,8 +102,9 @@ export default function Createsale() {
       await saleService.createSale(saleData);
       toast.success("Sale completed successfully!");
       setCart([]);
+      setDiscount(0); // Reset discount
       setCustomerId('');
-      loadStocks(); // Refresh stock levels
+      loadStocks();
     } catch (err) {
       toast.error("Failed to process sale");
     }
@@ -249,10 +261,11 @@ export default function Createsale() {
                       <div className="flex flex-col items-end">
                         <input 
                           type="number"
-                          step="0.5"
+                          // step="0.5"
+                          step={item.type?.toLowerCase() === 'lens' ? "0.5" : "1"}
                           min="0.5"
                           value={item.cartQty}
-                          onChange={(e) => updateCartQty(item.id, e.target.value, item.qty)}
+                          onChange={(e) => updateCartQty(item.id, e.target.value, item.qty, item.type)}
                           className="w-14 bg-slate-900 border border-slate-700 rounded-lg px-1 py-1 text-white text-center text-xs outline-none focus:border-indigo-500"
                         />
                         <span className="text-[9px] text-slate-500 mt-1">Stock: {item.qty}</span>
@@ -270,25 +283,50 @@ export default function Createsale() {
             </div>
 
             {/* 3. Footer / Totals (Fixed Bottom) */}
-            <div className="p-6 bg-slate-800/80 border-t border-slate-700 flex-none">
-              <div className="space-y-2 mb-4">
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Total Amount</span>
-                  <span className="text-2xl font-black text-white">
-                    {calculateTotal().toLocaleString()} 
-                    <small className="ml-1 text-[10px] text-indigo-400 uppercase">Ksh</small>
-                  </span>
+              <div className="p-6 bg-slate-800/80 border-t border-slate-700 flex-none">
+                <div className="space-y-3 mb-4">
+                  
+                  {/* Subtotal Display */}
+                  <div className="flex justify-between items-center text-slate-400 text-xs">
+                    <span>SUBTOTAL</span>
+                    <span>{calculateSubtotal().toLocaleString()} KSH</span>
+                  </div>
+
+                  {/* Discount Input */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Discount</span>
+                    <div className="relative">
+                      <input 
+                        type="number"
+                        value={discount}
+                        onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                        className="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white text-right text-sm outline-none focus:border-indigo-500"
+                        placeholder="0"
+                      />
+                      <span className="absolute -right-2 top-1 text-[10px] text-slate-500"></span>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-700 my-2"></div>
+
+                  {/* Final Total */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Total Amount</span>
+                    <span className="text-2xl font-black text-white">
+                      {(calculateSubtotal() - discount).toLocaleString()} 
+                      <small className="ml-1 text-[10px] text-indigo-400 uppercase">Ksh</small>
+                    </span>
+                  </div>
                 </div>
+                
+                <button 
+                  onClick={handleFinalSubmit}
+                  disabled={cart.length === 0 || !customerId}
+                  className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 text-white rounded-2xl font-bold transition-all shadow-lg"
+                >
+                  Complete Sale
+                </button>
               </div>
-              
-              <button 
-                onClick={handleFinalSubmit}
-                disabled={cart.length === 0 || !customerId}
-                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white rounded-2xl font-bold transition-all shadow-lg active:scale-[0.95]"
-              >
-                Complete Sale
-              </button>
-            </div>
           </div>
         </div>
       </div>

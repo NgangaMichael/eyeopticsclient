@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { X, Save, AlertCircle } from "lucide-react";
+import { X, Save, AlertCircle, Banknote, Calculator } from "lucide-react";
 import { jobCardService } from "../api/services/jobCardService";
 import { stockService } from "../api/services/stockService";
 import { toast } from "react-toastify";
 
-// Kenyan Insurance List
 const KENYAN_INSURANCES = [
   "Cash / Private", "SHA / NHIF", "AAR Insurance", "APA Insurance", "Britam",
   "CIC Insurance", "First Assurance", "GA Insurance", "Heritage", "ICEA Lion",
@@ -21,12 +20,10 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
     rSph: "", rCyl: "", rAxis: "", rPrism: "", rBase: "",
     lSph: "", lCyl: "", lAxis: "", lPrism: "", lBase: "",
     nearAdd: "", distPd: "", nearPd: "", heights: "",
-    lenses: "", 
-    lensQty: 1, // Default to 1 lens
-    frame: "", 
-    frameQty: 1, // Default to 1 frame
-    total: 0, advance: 0, jobDelDate: "",
-    consultation: 0
+    lenses: "", lensQty: 1, frame: "", frameQty: 1,
+    advance: 0, jobDelDate: "", notes: "",
+    discount: 0, consultation: 0,
+    lensPrice: 0, framePrice: 0
   };
 
   const [formData, setFormData] = useState(initialState);
@@ -39,9 +36,7 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
         try {
           const data = await stockService.getAllStocks();
           setStocks(data);
-        } catch (err) {
-          console.error("Failed to fetch inventory", err);
-        }
+        } catch (err) { console.error("Failed to fetch inventory", err); }
       };
       loadInventory();
     }
@@ -56,13 +51,10 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
         setFormData({
           ...initialState,
           ...editingCard,
+          lensPrice: editingCard.lensPrice || 0,
+          framePrice: editingCard.framePrice || 0,
           date: editingCard.date ? new Date(editingCard.date).toISOString().split("T")[0] : "",
           jobDelDate: editingCard.jobDelDate ? new Date(editingCard.jobDelDate).toISOString().split("T")[0] : "",
-          insuranceCompany: editingCard.insuranceCompany || "",
-          lenses: editingCard.lenses || "",
-          lensQty: editingCard.lensQty || 1,
-          frame: editingCard.frame || "",
-          frameQty: editingCard.frameQty || 1
         });
       } else {
         setFormData({ ...initialState, patientId: initialPatientId });
@@ -70,74 +62,70 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
     }
   }, [isOpen, editingCard, initialPatientId]);
 
-  const balance = Number(formData.total || 0) - Number(formData.advance || 0);
+  // --- AUTO CALCULATIONS ---
+  const calculatedTotal = useMemo(() => {
+    const lp = (Number(formData.lensPrice) || 0) * (Number(formData.lensQty) || 0);
+    const fp = (Number(formData.framePrice) || 0) * (Number(formData.frameQty) || 0);
+    const cons = Number(formData.consultation || 0);
+    const disc = Number(formData.discount || 0);
+    return (lp + fp + cons) - disc;
+  }, [formData.lensPrice, formData.lensQty, formData.framePrice, formData.frameQty, formData.consultation, formData.discount]);
+
+  const balance = calculatedTotal - Number(formData.advance || 0);
 
   const handleChange = (e) => {
-  const { name, value } = e.target;
-
-  if (name === "lenses") {
-    const selectedLens = lensOptions.find((l) => l.name === value);
-    setFormData((prev) => ({
-      ...prev,
-      lenses: value,
-      lensStockId: selectedLens ? selectedLens.id : null,
-      lensPrice: selectedLens ? selectedLens.priceKsh : 0, // Capture Price
-    }));
-  } else if (name === "frame") {
-    const selectedFrame = frameOptions.find((f) => f.name === value);
-    setFormData((prev) => ({
-      ...prev,
-      frame: value,
-      frameStockId: selectedFrame ? selectedFrame.id : null,
-      framePrice: selectedFrame ? selectedFrame.priceKsh : 0, // Capture Price
-    }));
-  } else {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  }
-};
+    const { name, value } = e.target;
+    if (name === "lenses") {
+      const selectedLens = lensOptions.find((l) => l.name === value);
+      setFormData((prev) => ({
+        ...prev, lenses: value,
+        lensStockId: selectedLens ? selectedLens.id : null,
+        lensPrice: selectedLens ? selectedLens.priceKsh : 0,
+      }));
+    } else if (name === "frame") {
+      const selectedFrame = frameOptions.find((f) => f.name === value);
+      setFormData((prev) => ({
+        ...prev, frame: value,
+        frameStockId: selectedFrame ? selectedFrame.id : null,
+        framePrice: selectedFrame ? selectedFrame.priceKsh : 0,
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+  };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  try {
-    const submissionData = { 
-      ...formData, 
-      patientId: parseInt(formData.patientId), 
-      lensQty: parseFloat(formData.lensQty),
-      frameQty: parseInt(formData.frameQty),
-      // Ensure IDs are numbers
-      lensStockId: formData.lensStockId ? parseInt(formData.lensStockId) : null,
-      frameStockId: formData.frameStockId ? parseInt(formData.frameStockId) : null,
-      balance 
-    };
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const submissionData = { 
+        ...formData, 
+        total: calculatedTotal, // Pass the auto-calculated total
+        balance: balance,
+        patientId: parseInt(formData.patientId), 
+        lensQty: parseFloat(formData.lensQty),
+        frameQty: parseInt(formData.frameQty),
+        lensPrice: Number(formData.lensPrice || 0),
+        framePrice: Number(formData.framePrice || 0),
+        lensStockId: formData.lensStockId ? parseInt(formData.lensStockId) : null,
+        frameStockId: formData.frameStockId ? parseInt(formData.frameStockId) : null,
+      };
 
-    if (editingCard) {
-      await jobCardService.updateJobCard(editingCard.id, submissionData);
-      toast.success("Job Card updated!");
-    } else {
-      await jobCardService.createJobCard(submissionData);
-      toast.success("Job Card created!");
+      if (editingCard) {
+        await jobCardService.updateJobCard(editingCard.id, submissionData);
+        toast.success("Job Card updated!");
+      } else {
+        await jobCardService.createJobCard(submissionData);
+        toast.success("Job Card created!");
+      }
+      onJobCardAdded(); 
+      onClose();
+    } catch (error) {
+      toast.error("Operation failed.");
+    } finally {
+      setLoading(false);
     }
-    onJobCardAdded(); 
-    onClose();
-  } catch (error) {
-    toast.error("Operation failed.");
-  } finally {
-    setLoading(false);
-  }
-};
-
-  // Auto-calculate Total using useMemo
-  const calculatedTotal = useMemo(() => {
-    const lp = (formData.lensPrice || 0) * (formData.lensQty || 0);
-    const fp = (formData.framePrice || 0) * (formData.frameQty || 0);
-    const cons = Number(formData.consultation || 0);
-    return lp + fp + cons;
-  }, [formData.lensPrice, formData.lensQty, formData.framePrice, formData.frameQty, formData.consultation]);
-
-  useEffect(() => {
-      setFormData(prev => ({ ...prev, total: calculatedTotal }));
-  }, [calculatedTotal]);
+  };
 
   if (!isOpen) return null;
 
@@ -216,7 +204,6 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
 
           {/* Section 3: Inventory Dropdowns & Quantities */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* LENSES */}
             <div className="flex gap-2">
               <div className="flex-1 space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Lens Selection</label>
@@ -232,19 +219,11 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Qty</label>
                 <select name="lensQty" value={formData.lensQty} onChange={handleChange}
                   className="w-full px-2 py-2.5 bg-indigo-50 border border-indigo-200 rounded-xl text-sm font-bold text-indigo-700 outline-none">
-                  <option value="0">0</option>
-                  <option value="0.5">0.5</option>
-                  <option value="1">1.0</option>
-                  <option value="1.5">1.5</option>
-                  <option value="2">2.0</option>
-                  <option value="2.5">2.5</option>
-                  <option value="3">3.0</option>
-
+                  {[0, 0.5, 1, 1.5, 2, 2.5, 3].map(q => <option key={q} value={q}>{q.toFixed(1)}</option>)}
                 </select>
               </div>
             </div>
 
-            {/* FRAMES */}
             <div className="flex gap-2">
               <div className="flex-1 space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Frame Selection</label>
@@ -260,12 +239,7 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Qty</label>
                 <select name="frameQty" value={formData.frameQty} onChange={handleChange}
                   className="w-full px-2 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-bold text-emerald-700 outline-none">
-                  <option value="0">0</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-
+                  {[0, 1, 2, 3, 4].map(q => <option key={q} value={q}>{q}</option>)}
                 </select>
               </div>
             </div>
@@ -282,49 +256,142 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
             ))}
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Consultation</label>
-            <input type="number" name="consultation" value={formData.consultation} onChange={handleChange}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold" />
+          {/* Section 5: Financial Settings */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 text-indigo-600">Consultation Fee</label>
+              <input type="number" name="consultation" value={formData.consultation} onChange={handleChange}
+                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500 outline-none" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 text-rose-500">Discount Given</label>
+              <input type="number" name="discount" value={formData.discount} onChange={handleChange}
+                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-rose-600 focus:ring-2 focus:ring-rose-500 outline-none" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 text-emerald-600">Amount Paid (Ksh)</label>
+              <input type="number" name="advance" value={formData.advance} onChange={handleChange}
+                className="w-full px-4 py-2.5 bg-emerald-50 border border-emerald-100 rounded-xl font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none" />
+            </div>
           </div>
 
-          {/* Section 5: Financials */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-slate-100">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 text-indigo-600">Total (Ksh)</label>
-              <input type="number" name="total" value={formData.total} onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-indigo-50 border border-indigo-100 rounded-xl font-bold text-indigo-700 outline-none" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 text-emerald-600">Advance</label>
-              <input type="number" name="advance" value={formData.advance} onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-emerald-50 border border-emerald-100 rounded-xl font-bold text-emerald-700 outline-none" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 text-rose-500">Balance</label>
-              <div className="w-full px-4 py-2.5 bg-rose-50 border border-rose-100 rounded-xl font-bold text-rose-600">
-                Ksh {balance.toLocaleString()}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Clinical Notes</label>
+            <textarea name="notes" value={formData.notes} onChange={handleChange}
+              placeholder="Instructions or observations..."
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm min-h-[80px]" />
+          </div>
+
+          {/* Section 6: Detailed Financial Summary & Breakdown */}
+            <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                
+                {/* Left Side: Line Item Breakdown */}
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] border-b border-slate-800 pb-2">
+                    Invoice Breakdown
+                  </h4>
+                  
+                  <div className="space-y-3">
+                    {/* Lenses Calculation */}
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-400">Lenses ({Number(formData.lensPrice).toLocaleString()} × {formData.lensQty})</span>
+                      <span className="font-mono font-bold">Ksh {(Number(formData.lensPrice) * Number(formData.lensQty)).toLocaleString()}</span>
+                    </div>
+
+                    {/* Frame Calculation */}
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-400">Frame ({Number(formData.framePrice).toLocaleString()} × {formData.frameQty})</span>
+                      <span className="font-mono font-bold">Ksh {(Number(formData.framePrice) * Number(formData.frameQty)).toLocaleString()}</span>
+                    </div>
+
+                    {/* Consultation */}
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-400">Consultation Fee</span>
+                      <span className="font-mono font-bold">Ksh {Number(formData.consultation).toLocaleString()}</span>
+                    </div>
+
+                    {/* Discount (Only shows if > 0) */}
+                    {Number(formData.discount) > 0 && (
+                      <div className="flex justify-between items-center text-sm text-rose-400">
+                        <span>Discount</span>
+                        <span className="font-mono font-bold">- Ksh {Number(formData.discount).toLocaleString()}</span>
+                      </div>
+                    )}
+
+                    {/* Amount Paid Highlights */}
+                    <div className="flex justify-between items-center text-sm text-emerald-400 pt-2 border-t border-slate-800">
+                      <span>Amount Paid (Advance)</span>
+                      <span className="font-mono font-bold">Ksh {Number(formData.advance).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Side: Final Totals & Actions */}
+                <div className="flex flex-col justify-between space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Total Payable</p>
+                      <p className="text-4xl font-black text-white tracking-tighter">
+                        <span className="text-lg font-normal text-slate-500 mr-1">Ksh</span>
+                        {calculatedTotal.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="border-l border-slate-800 pl-4">
+                      <p className="text-[10px] font-bold text-rose-500 uppercase mb-1">Balance Due</p>
+                      <p className="text-4xl font-black text-rose-500 tracking-tighter">
+                        <span className="text-lg font-normal text-rose-800 mr-1">Ksh</span>
+                        {balance.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase">
+                      <label>Promise Date:</label>
+                      <input 
+                        type="date" 
+                        name="jobDelDate" 
+                        value={formData.jobDelDate} 
+                        onChange={handleChange}
+                        className="bg-transparent border-b border-slate-700 text-indigo-400 focus:outline-none focus:border-indigo-500 pb-1"
+                      />
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <button 
+                        type="button" 
+                        onClick={onClose} 
+                        className="flex-1 py-3 rounded-2xl text-sm font-bold text-slate-400 hover:bg-slate-800 transition-all border border-slate-800"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        type="submit" 
+                        disabled={loading}
+                        className={`flex-[2] py-3 rounded-2xl text-sm font-black text-white shadow-xl flex items-center justify-center gap-2 transition-all ${
+                          editingCard ? "bg-amber-500 hover:bg-amber-600 shadow-amber-900/20" : "bg-indigo-500 hover:bg-indigo-600 shadow-indigo-900/20"
+                        }`}
+                      >
+                        {loading ? "Processing..." : <><Save size={18}/> {editingCard ? "Update Record" : "Confirm & Save"}</>}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Promise Date</label>
-              <input type="date" name="jobDelDate" value={formData.jobDelDate} onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" />
-            </div>
-          </div>
-
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4">
+          {/* <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={onClose} className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 transition-all">
               Cancel
             </button>
             <button type="submit" disabled={loading}
               className={`px-8 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg flex items-center gap-2 transition-all ${
-                editingCard ? "bg-amber-500 hover:bg-amber-600 shadow-amber-200" : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200"
+                editingCard ? "bg-amber-500 hover:bg-amber-600" : "bg-indigo-600 hover:bg-indigo-700"
               }`}>
               {loading ? "Saving..." : <><Save size={18}/> {editingCard ? "Update Card" : "Save Job Card"}</>}
             </button>
-          </div>
+          </div> */}
         </form>
       </div>
     </div>
