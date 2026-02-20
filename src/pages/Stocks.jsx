@@ -18,6 +18,7 @@ export default function Stocks() {
 
   const [sphSearch, setSphSearch] = useState('');
   const [cylSearch, setCylSearch] = useState('');
+  const [indexSearch, setIndexSearch] = useState('');
 
   useEffect(() => { loadStocks(); }, []);
 
@@ -44,13 +45,16 @@ const filteredStocks = useMemo(() => {
     const matchesSph = sphSearch === '' || parseFloat(item.sph) === parseFloat(sphSearch);
     const matchesCyl = cylSearch === '' || parseFloat(item.cyl) === parseFloat(cylSearch);
 
+    const matchesIndex = indexSearch === '' || 
+      (item.index && item.index.toLowerCase().includes(indexSearch.toLowerCase()));
+
     const createdAt = new Date(item.createdAt).getTime();
     const fromOk = dateFrom ? createdAt >= new Date(dateFrom).getTime() : true;
     const toOk = dateTo ? createdAt <= new Date(dateTo).setHours(23, 59, 59, 999) : true;
 
-    return matchesSearch && matchesType && fromOk && toOk && matchesSph && matchesCyl;
+    return matchesSearch && matchesType && fromOk && toOk && matchesSph && matchesCyl && matchesIndex;
   });
-}, [stocks, searchTerm, typeFilter, dateFrom, dateTo, sphSearch, cylSearch]);
+}, [stocks, searchTerm, typeFilter, dateFrom, dateTo, sphSearch, cylSearch, indexSearch]);
 
   // Unique types for the dropdown
   const categories = useMemo(() => {
@@ -158,85 +162,98 @@ const filteredStocks = useMemo(() => {
 
       {/* Filter Bar */}
       {/* Replace your current Filter Bar div with this updated grid */}
-<div className="grid grid-cols-1 md:grid-cols-7 gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm items-center">
-  
-  {/* Search (Takes 2 columns now) */}
-  <div className="relative md:col-span-1">
-    <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
-    <input
-      type="text"
-      placeholder="Name/Code..."
-      className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-      value={searchTerm}
-      onChange={(e) => setSearchTerm(e.target.value)}
-    />
-  </div>
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm items-center">
+          
+          {/* Search (Takes 2 columns now) */}
+          <div className="relative md:col-span-1">
+            <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+            <input
+              type="text"
+              placeholder="Name/Code..."
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
 
-  {/* SPH Search */}
-  <div className="relative">
-    <input
-      type="number"
-      step="0.25"
-      placeholder="0.00"
-      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold"
-      value={sphSearch}
-      onChange={(e) => setSphSearch(e.target.value)}
-    />
-    <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-blue-500 uppercase">SPH</span>
-  </div>
+          {/* SPH Search */}
+          <div className="relative">
+            <input
+              type="number"
+              step="0.25"
+              placeholder="0.00"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold"
+              value={sphSearch}
+              onChange={(e) => setSphSearch(e.target.value)}
+            />
+            <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-blue-500 uppercase">SPH</span>
+          </div>
 
-  {/* CYL Search */}
-  <div className="relative">
-    <input
-      type="number"
-      step="0.25"
-      placeholder="0.00"
-      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-bold"
-      value={cylSearch}
-      onChange={(e) => setCylSearch(e.target.value)}
-    />
-    <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-emerald-500 uppercase">CYL</span>
-  </div>
+          {/* CYL Search */}
+          <div className="relative">
+            <input
+              type="number"
+              step="0.25"
+              placeholder="0.00"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-bold"
+              value={cylSearch}
+              onChange={(e) => setCylSearch(e.target.value)}
+            />
+            <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-emerald-500 uppercase">CYL</span>
+          </div>
 
-  {/* Category */}
-  <div className="relative">
-    <select
-      value={typeFilter}
-      onChange={(e) => setTypeFilter(e.target.value)}
-      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm appearance-none"
-    >
-      <option value="all">All</option>
-      {categories.map(type => <option key={type} value={type}>{type}</option>)}
-    </select>
-      <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">Type</span>
-    </div>
+          {/* INDEX Search */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="1.56"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 text-sm font-bold"
+              value={indexSearch}
+              onChange={(e) => setIndexSearch(e.target.value)}
+            />
+            <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-purple-500 uppercase">Index</span>
+          </div>
 
-    {/* Date From & To (Keep existing but wrapped for space) */}
-    <div className="relative">
-      <input type="date" className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px]" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-      <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">From</span>
-    </div>
+          {/* Category */}
+          <div className="relative">
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm appearance-none"
+            >
+              <option value="all">All</option>
+              {categories.map(type => <option key={type} value={type}>{type}</option>)}
+            </select>
+              <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">Type</span>
+            </div>
 
-    <div className="relative">
-      <input type="date" className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px]" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-      <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">To</span>
-    </div>
+            {/* Date From & To (Keep existing but wrapped for space) */}
+            <div className="relative">
+              <input type="date" className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px]" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">From</span>
+            </div>
 
-    {/* Reset Button */}
-    <button
-      onClick={() => {
-        setSearchTerm('');
-        setTypeFilter('all');
-        setDateFrom('');
-        setDateTo('');
-        setSphSearch('');
-        setCylSearch('');
-      }}
-      className="text-xs font-bold text-rose-500 uppercase hover:underline"
-    >
-      Reset
-    </button>
-  </div>
+            <div className="relative">
+              <input type="date" className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px]" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+              <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-slate-400 uppercase">To</span>
+            </div>
+
+            {/* Reset Button */}
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setTypeFilter('all');
+                setDateFrom('');
+                setDateTo('');
+                setSphSearch('');
+                setCylSearch('');
+                setIndexSearch('');
+              }}
+              className="text-xs font-bold text-rose-500 uppercase hover:underline"
+            >
+              Reset
+            </button>
+          </div>
 
       {/* Table Section */}
       <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
@@ -244,9 +261,11 @@ const filteredStocks = useMemo(() => {
           <thead className="bg-slate-50 border-b border-slate-100">
             <tr>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Name / Code</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Index</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Type</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Qty</th>
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Price (USD / KSh)</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Retail price</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Wholesale price</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
             </tr>
           </thead>
@@ -258,16 +277,6 @@ const filteredStocks = useMemo(() => {
                     <div className="font-bold text-slate-800">{item.name}</div>
                     <div className="text-xs text-indigo-500 font-mono bg-indigo-50 px-1.5 py-0.5 rounded inline-block mt-1">
                       {item.code}
-                      {/* Logic for Lens specific SPH and CYL */}
-                      {/* {item.type?.toLowerCase() === 'lens' && (item.sph !== null || item.cyl !== null) && (
-                        <div className="flex items-center gap-1 bg-slate-800 text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm">
-                          <span className="text-slate-400">SPH:</span> 
-                          <span>{item.sph > 0 ? `+${item.sph}` : item.sph}</span>
-                          <span className="mx-1 text-slate-600">|</span>
-                          <span className="text-slate-400">CYL:</span> 
-                          <span>{item.cyl > 0 ? `+${item.cyl}` : item.cyl}</span>
-                        </div>
-                      )} */}
                       {item.type?.toLowerCase() === 'lens' && (
                         <div className="flex flex-col gap-1 mt-1">
                           {/* Lens Category Badge */}
@@ -306,11 +315,25 @@ const filteredStocks = useMemo(() => {
                                   <span>{item.nearAdd > 0 ? `+${item.nearAdd}` : item.nearAdd}</span>
                                 </>
                               )}
+
+                              {/* index - Only show if present */}
+                              {item.index && (
+                                <>
+                                  <span className="mx-1 text-slate-600">|</span>
+                                  <span className="text-slate-400">INDEX:</span>
+                                  <span>{item.index}</span>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
                       )}
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-200">
+                      {item.index}
+                    </span>
                   </td>
                   <td className="px-6 py-4">
                     <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-200">
@@ -331,8 +354,10 @@ const filteredStocks = useMemo(() => {
                     <div className="text-slate-900 font-bold">
                       {Number(item.priceKsh || 0).toLocaleString()} <span className="text-[10px] text-slate-400">KSH</span>
                     </div>
-                    <div className="text-slate-400 text-xs">
-                      ${Number(item.priceUsd || 0).toFixed(2)}
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    <div className="text-slate-900 font-bold">
+                      {Number(item.wholesalePrice || 0).toLocaleString()} <span className="text-[10px] text-slate-400">KSH</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">

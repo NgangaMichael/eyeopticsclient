@@ -13,7 +13,8 @@ const OrderModal = ({ isOpen, onClose, onSubmit, initialData, mode, existingStoc
     supplierName: '', status: 'pending', sph: '', cyl: '',
     axis: '',
     nearAdd: '',
-    lensCategory: 'Stock'
+    lensCategory: 'Stock',
+    index: ''
   });
 
   const isReadOnly = mode === 'view' || formData.status === 'received';
@@ -224,6 +225,19 @@ const OrderModal = ({ isOpen, onClose, onSubmit, initialData, mode, existingStoc
                     </select>
                   </div>
 
+                  {/* Index Field*/}
+                  <div>
+                    <label className="text-[10px] font-bold text-indigo-500 uppercase">Index</label>
+                    <input
+                      type="text"
+                      placeholder="1.61"
+                      disabled={isReadOnly}
+                      className="w-full px-3 py-2 rounded-lg border border-indigo-200 mt-1 outline-none font-bold text-sm"
+                      value={formData.index}
+                      onChange={e => setFormData({ ...formData, index: e.target.value })}
+                    />
+                  </div>
+
                   {/* SPH */}
                   <div>
                     <label className="text-[10px] font-bold text-indigo-500 uppercase">SPH</label>
@@ -281,7 +295,7 @@ const OrderModal = ({ isOpen, onClose, onSubmit, initialData, mode, existingStoc
                 <input
                   type="number"
                   step="0.5"
-                  required
+                  required={field !== 'landedCost'}
                   disabled={isReadOnly}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 mt-1 outline-none font-bold text-slate-900"
                   value={formData[field]}

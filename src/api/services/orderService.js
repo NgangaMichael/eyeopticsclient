@@ -9,6 +9,7 @@ export const orderService = {
       ...data,
       // CHANGED: Use parseFloat to allow 0.5 for single lenses
       quantityOrdered: parseFloat(data.quantityOrdered),
+      index: data.index || null,
       landedCost: parseFloat(data.landedCost),
       priceKsh: parseFloat(data.priceKsh || 0),
       priceUsd: parseFloat(data.priceUsd || 0),

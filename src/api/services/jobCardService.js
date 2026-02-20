@@ -26,87 +26,56 @@ export const jobCardService = {
     }
   },
 
-//   async createJobCard(formData) {
-//   try {
-//     const payload = {
-//       // 1. Basic Info
-//       jobCardNumber: formData.jobCardNumber,
-//       patientId: Number(formData.patientId),
-//       insuranceCompany: formData.insuranceCompany || null,
-//       date: formData.date || new Date().toISOString(),
-
-//       // 2. Prescription (THE MISSING PIECE)
-//       rSph: formData.rSph || "",
-//       rCyl: formData.rCyl || "",
-//       rAxis: formData.rAxis ? Number(formData.rAxis) : null,
-//       rPrism: formData.rPrism || "",
-//       rBase: formData.rBase || "",
-//       lSph: formData.lSph || "",
-//       lCyl: formData.lCyl || "",
-//       lAxis: formData.lAxis ? Number(formData.lAxis) : null,
-//       lPrism: formData.lPrism || "",
-//       lBase: formData.lBase || "",
-      
-//       // 3. Measurements
-//       nearAdd: formData.nearAdd || "",
-//       distPd: formData.distPd || "",
-//       nearPd: formData.nearPd || "",
-//       heights: formData.heights || "",
-
-//       // 4. Inventory Selection
-//       lenses: formData.lenses || null,
-//       frame: formData.frame || null,
-//       lensStockId: formData.lensStockId ? Number(formData.lensStockId) : null,
-//       frameStockId: formData.frameStockId ? Number(formData.frameStockId) : null,
-//       lensQty: formData.lensQty ? parseFloat(formData.lensQty) : 0,
-//       frameQty: formData.frameQty ? parseInt(formData.frameQty, 10) : 0,
-
-//       // 5. Financials
-//       lensPrice: Number(formData.lensPrice || 0),
-//       framePrice: Number(formData.framePrice || 0),
-//       consultation: Number(formData.consultation || 0),
-//       total: Number(formData.total || 0),
-//       advance: Number(formData.advance || 0),
-//       balance: Number(formData.total || 0) - Number(formData.advance || 0),
-//       jobDelDate: formData.jobDelDate || null,
-//     };
-
-//     console.log("✅ FIXED payload being sent to API:", payload);
-
-//     const response = await JobCardAPI.create(payload); // Uncommented!
-//     return response.data;
-//   } catch (error) {
-//     console.error("Error creating job card:", error);
-//     throw error;
-//   }
-// },
-
 async createJobCard(formData) {
-  // Just clean the numeric IDs/Prices and spread the rest
-  const payload = {
-    ...formData,
-    patientId: Number(formData.patientId),
-    lensStockId: formData.lensStockId ? Number(formData.lensStockId) : null,
-    frameStockId: formData.frameStockId ? Number(formData.frameStockId) : null,
-    // Add any other specific Number() conversions needed
-  };
-  
-  const response = await JobCardAPI.create(payload);
-  return response.data;
-},
+    try {
+      const payload = {
+        ...formData,
+        // Ensure all numeric fields are correctly typed
+        patientId: Number(formData.patientId),
+        
+        // Lens Specifics
+        rLensStockId: formData.rLensStockId ? Number(formData.rLensStockId) : null,
+        lLensStockId: formData.lLensStockId ? Number(formData.lLensStockId) : null,
+        rLensPrice: Number(formData.rLensPrice || 0),
+        lLensPrice: Number(formData.lLensPrice || 0),
+        
+        // Frame Specifics
+        frameStockId: formData.frameStockId ? Number(formData.frameStockId) : null,
+        framePrice: Number(formData.framePrice || 0),
+        frameQty: Number(formData.frameQty || 0),
+        
+        // Financials
+        consultation: Number(formData.consultation || 0),
+        discount: Number(formData.discount || 0),
+        advance: Number(formData.advance || 0),
+        total: Number(formData.total || 0),
+        balance: Number(formData.balance || 0),
+      };
 
-  // Update existing job card
+      const response = await JobCardAPI.create(payload);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating job card:", error);
+      throw error;
+    }
+  },
+
   async updateJobCard(id, formData) {
     try {
-      // Ensure numeric fields are correctly formatted if they exist
-      const updatedData = { ...formData };
-      console.log("✅ Received formData for update:", formData);
+      // Re-calculating balance here is a good safety check
+      const total = Number(formData.total || 0);
+      const advance = Number(formData.advance || 0);
       
-      if (formData.total !== undefined || formData.advance !== undefined) {
-        const total = Number(formData.total || 0);
-        const advance = Number(formData.advance || 0);
-        updatedData.balance = total - advance;
-      }
+      const updatedData = { 
+        ...formData,
+        // Ensure clean numbers for the update payload
+        rLensPrice: Number(formData.rLensPrice || 0),
+        lLensPrice: Number(formData.lLensPrice || 0),
+        framePrice: Number(formData.framePrice || 0),
+        total: total,
+        advance: advance,
+        balance: total - advance 
+      };
 
       const response = await JobCardAPI.update(id, updatedData);
       return response.data;

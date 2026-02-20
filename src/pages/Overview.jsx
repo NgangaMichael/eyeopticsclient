@@ -284,8 +284,20 @@ const Overview = () => {
                         <td className="px-4 py-4 font-mono text-xs font-bold text-indigo-600">
                           #INV-{sale.id.toString().padStart(4, '0')}
                         </td>
-                        <td className="px-4 py-4 font-bold text-slate-700">
+                        {/* <td className="px-4 py-4 font-bold text-slate-700">
                           {sale.customer?.name || 'Walk-in'}
+                        </td> */}
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-slate-800">
+                            {sale.customer 
+                              ? sale.customer.name 
+                              : sale.patient 
+                                ? `${sale.patient.firstName} ${sale.patient.lastName}` 
+                                : "Walk-in"}
+                          </div>
+                          <div className="text-[10px] text-slate-400">
+                            <span className='text-xs font-bold text-indigo-600'>Phone:</span> {sale.customer?.phone || sale.patient?.phone || "No Contact"}
+                          </div>
                         </td>
                         <td className="px-4 py-4 text-slate-700 font-semibold">
                           KSh {Number(sale.total).toLocaleString()}

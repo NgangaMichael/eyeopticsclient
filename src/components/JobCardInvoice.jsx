@@ -6,14 +6,23 @@ const JobCardInvoice = React.forwardRef(({ card, patient }, ref) => {
 
   // Convert to numbers safely for calculations
   const consultation = Number(card.consultation || 0);
-  const lPrice = Number(card.lensPrice || 0);
-  const lQty = Number(card.lensQty || 0);
+  
+  // Lens Prices (Each representing 0.5 of a pair)
+  const rLensPrice = Number(card.rLensPrice || 0);
+  const lLensPrice = Number(card.lLensPrice || 0);
+  
+  // Frame Details
   const fPrice = Number(card.framePrice || 0);
   const fQty = Number(card.frameQty || 0);
+  
+  // Financials
   const discount = Number(card.discount || 0);
+  const total = Number(card.total || 0);
+  const advance = Number(card.advance || 0);
+  const balance = Number(card.balance || 0);
 
-  // Calculate gross total before discount
-  const grossTotal = consultation + (lPrice * lQty) + (fPrice * fQty);
+  // Calculate gross total: Sum of lenses + (frame price * qty) + consultation
+  const grossTotal = consultation + rLensPrice + lLensPrice + (fPrice * fQty);
 
   return (
     <div ref={ref} className="p-12 bg-white text-slate-800 font-sans min-h-[1050px] flex flex-col">
@@ -63,25 +72,30 @@ const JobCardInvoice = React.forwardRef(({ card, patient }, ref) => {
                 <th className="pb-1">SPH</th>
                 <th className="pb-1">CYL</th>
                 <th className="pb-1">AXIS</th>
-                <th className="pb-1">ADD</th>
+                <th className="pb-1">PRISM</th>
               </tr>
             </thead>
             <tbody className="text-center">
               <tr className="border-b border-slate-50">
-                <td className="text-left font-bold py-2">OD</td>
+                <td className="text-left font-bold py-2">OD (R)</td>
                 <td>{card.rSph || '0.00'}</td>
                 <td>{card.rCyl || '0.00'}</td>
                 <td>{card.rAxis ? `${card.rAxis}°` : '-'}</td>
-                <td rowSpan="2" className="align-middle bg-slate-50 font-bold border-l">{card.nearAdd || '-'}</td>
+                <td>{card.rPrism || '-'}</td>
               </tr>
               <tr>
-                <td className="text-left font-bold py-2">OS</td>
+                <td className="text-left font-bold py-2">OS (L)</td>
                 <td>{card.lSph || '0.00'}</td>
                 <td>{card.lCyl || '0.00'}</td>
                 <td>{card.lAxis ? `${card.lAxis}°` : '-'}</td>
+                <td>{card.lPrism || '-'}</td>
               </tr>
             </tbody>
           </table>
+          <div className="mt-3 pt-2 border-t border-slate-50 flex justify-between text-[9px] font-bold text-slate-500 uppercase">
+             <span>Near Add: {card.nearAdd || '-'}</span>
+             <span>Dist PD: {card.distPd || '-'}</span>
+          </div>
         </div>
       </div>
 
@@ -102,7 +116,7 @@ const JobCardInvoice = React.forwardRef(({ card, patient }, ref) => {
               <tr className="border-b border-slate-50">
                 <td className="py-6">
                   <p className="font-bold text-slate-800">Professional Consultation</p>
-                  <p className="text-xs text-slate-500">Optometric examination & refraction</p>
+                  <p className="text-xs text-slate-500">Eye examination and vision assessment</p>
                 </td>
                 <td className="py-6 text-center text-slate-600">{consultation.toLocaleString()}</td>
                 <td className="py-6 text-center text-slate-600">1</td>
@@ -110,20 +124,33 @@ const JobCardInvoice = React.forwardRef(({ card, patient }, ref) => {
               </tr>
             )}
 
-            {/* 2. Lenses */}
-            {card.lenses && (
+            {/* 2. Right Lens */}
+            {card.rLens && (
               <tr className="border-b border-slate-50">
                 <td className="py-6">
-                  <p className="font-bold text-slate-800">Lens: {card.lenses}</p>
-                  <p className="text-xs text-slate-500">Custom optical lenses as per prescription</p>
+                  <p className="font-bold text-slate-800">Lens (Right): {card.rLens}</p>
+                  <p className="text-xs text-slate-500">Individual prescription lens (OD)</p>
                 </td>
-                <td className="py-6 text-center text-slate-600">{lPrice.toLocaleString()}</td>
-                <td className="py-6 text-center text-slate-600">{lQty}</td>
-                <td className="py-6 text-right font-bold text-slate-700">{(lPrice * lQty).toLocaleString()}</td>
+                <td className="py-6 text-center text-slate-600">{rLensPrice.toLocaleString()}</td>
+                <td className="py-6 text-center text-slate-600">0.5</td>
+                <td className="py-6 text-right font-bold text-slate-700">{rLensPrice.toLocaleString()}</td>
               </tr>
             )}
 
-            {/* 3. Frames */}
+            {/* 3. Left Lens */}
+            {card.lLens && (
+              <tr className="border-b border-slate-50">
+                <td className="py-6">
+                  <p className="font-bold text-slate-800">Lens (Left): {card.lLens}</p>
+                  <p className="text-xs text-slate-500">Individual prescription lens (OS)</p>
+                </td>
+                <td className="py-6 text-center text-slate-600">{lLensPrice.toLocaleString()}</td>
+                <td className="py-6 text-center text-slate-600">0.5</td>
+                <td className="py-6 text-right font-bold text-slate-700">{lLensPrice.toLocaleString()}</td>
+              </tr>
+            )}
+
+            {/* 4. Frames */}
             {card.frame && (
               <tr className="border-b border-slate-50">
                 <td className="py-6">
@@ -156,17 +183,17 @@ const JobCardInvoice = React.forwardRef(({ card, patient }, ref) => {
 
           <div className="flex justify-between text-sm pt-2 border-t border-slate-200">
             <span className="font-bold text-slate-500 uppercase tracking-tight">Net Total</span>
-            <span className="font-black text-slate-900 text-lg">Ksh {Number(card.total).toLocaleString()}</span>
+            <span className="font-black text-slate-900 text-lg">Ksh {total.toLocaleString()}</span>
           </div>
           
           <div className="flex justify-between text-sm text-emerald-600">
             <span className="font-bold uppercase tracking-tight">Amount Paid</span>
-            <span className="font-black">Ksh {Number(card.advance).toLocaleString()}</span>
+            <span className="font-black">Ksh {advance.toLocaleString()}</span>
           </div>
 
           <div className="flex justify-between text-lg text-white bg-rose-500 p-4 rounded-2xl shadow-lg shadow-rose-200 mt-4">
             <span className="font-black uppercase text-xs self-center">Balance Due</span>
-            <span className="font-black">Ksh {Number(card.balance).toLocaleString()}</span>
+            <span className="font-black">Ksh {balance.toLocaleString()}</span>
           </div>
         </div>
       </div>

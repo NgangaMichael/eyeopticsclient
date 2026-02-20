@@ -11,7 +11,9 @@ export const saleService = {
   // src/api/services/saleService.js
 
 async createSale(saleData) {
+  // console.log("Creating sale with data:", saleData);
     const payload = {
+      referenceNumber: saleData.referenceNumber,
       customerId: parseInt(saleData.customerId),
       // Pass the discount through to the backend
       discount: parseFloat(saleData.discount || 0), 

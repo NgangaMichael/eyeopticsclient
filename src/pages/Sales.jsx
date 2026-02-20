@@ -35,10 +35,20 @@ export default function Sales() {
   const filteredSales = useMemo(() => {
     return sales.filter(sale => {
       const invCode = `#INV-${sale.id.toString().padStart(4, '0')}`;
-      const matchesSearch = invCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            sale.customer?.name.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesCustomer = customerFilter === 'all' || sale.customerId.toString() === customerFilter;
+      // Safely get names for comparison
+      const customerName = sale.customer?.name || '';
+      const patientName = sale.patient ? `${sale.patient.firstName} ${sale.patient.lastName}` : '';
+      
+      const matchesSearch = 
+        invCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        patientName.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Safety check for ID comparison to prevent "Blank Page" crash
+      const matchesCustomer = customerFilter === 'all' || 
+                              (sale.customerId?.toString() === customerFilter) ||
+                              (sale.patientId?.toString() === customerFilter);
 
       const saleDate = new Date(sale.createdAt);
       const matchesDateFrom = !dateFrom || saleDate >= new Date(dateFrom);
@@ -50,13 +60,21 @@ export default function Sales() {
 
   // Unique customers for the dropdown
   const uniqueCustomers = useMemo(() => {
-    const clients = sales.map(s => s.customer).filter(Boolean);
+    const list = [];
     const seen = new Set();
-    return clients.filter(c => {
-      const duplicate = seen.has(c.id);
-      seen.add(c.id);
-      return !duplicate;
+
+    sales.forEach(s => {
+      if (s.customer && !seen.has(`c-${s.customer.id}`)) {
+        seen.add(`c-${s.customer.id}`);
+        list.push({ id: s.customer.id, name: `${s.customer.name} (Client)` });
+      }
+      if (s.patient && !seen.has(`p-${s.patient.id}`)) {
+        seen.add(`p-${s.patient.id}`);
+        list.push({ id: s.patient.id, name: `${s.patient.firstName} ${s.patient.lastName} (Patient)` });
+      }
     });
+
+    return list;
   }, [sales]);
 
   // 2. Print Function
@@ -153,6 +171,7 @@ export default function Sales() {
           <thead className="bg-slate-50 border-b border-slate-100">
             <tr>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Receipt ID</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">REF NO</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Customer</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Total Amount</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Items</th>
@@ -166,9 +185,20 @@ export default function Sales() {
                 <td className="px-6 py-4 font-mono text-xs font-bold text-indigo-600">
                   #INV-{sale.id.toString().padStart(4, '0')}
                 </td>
+                <td className="px-6 py-4 font-mono text-xs font-bold text-indigo-600">
+                  {sale.referenceNumber}
+                </td>
                 <td className="px-6 py-4">
-                  <div className="font-bold text-slate-800">{sale.customer?.name || "Walk-in"}</div>
-                  <div className="text-[10px] text-slate-400">{sale.customer?.phone}</div>
+                  <div className="font-bold text-slate-800">
+                    {sale.customer 
+                      ? sale.customer.name 
+                      : sale.patient 
+                        ? `${sale.patient.firstName} ${sale.patient.lastName}` 
+                        : "Walk-in"}
+                  </div>
+                  <div className="text-[10px] text-slate-400">
+                    {sale.customer?.phone || sale.patient?.phone || "No Contact"}
+                  </div>
                 </td>
                 <td className="px-6 py-4">
                   <span className="font-extrabold text-slate-700">{Number(sale.total).toLocaleString()}</span>

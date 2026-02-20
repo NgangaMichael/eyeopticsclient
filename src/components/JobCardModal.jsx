@@ -17,13 +17,34 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
     patientId: initialPatientId || "",
     insuranceCompany: "",
     date: new Date().toISOString().split("T")[0],
-    rSph: "", rCyl: "", rAxis: "", rPrism: "", rBase: "",
-    lSph: "", lCyl: "", lAxis: "", lPrism: "", lBase: "",
-    nearAdd: "", distPd: "", nearPd: "", heights: "",
-    lenses: "", lensQty: 1, frame: "", frameQty: 1,
-    advance: 0, jobDelDate: "", notes: "",
-    discount: 0, consultation: 0,
-    lensPrice: 0, framePrice: 0
+    rSph: "", 
+    rCyl: "", 
+    rAxis: "", 
+    rPrism: "", 
+    rBase: "",
+    lSph: "", 
+    lCyl: "", 
+    lAxis: "", 
+    lPrism: "", 
+    lBase: "",
+    nearAdd: "", 
+    distPd: "", 
+    nearPd: "", 
+    heights: "",
+    lenses: "", 
+    rLens: "", rLensStockId: null, rLensPrice: 0,
+    lLens: "", lLensStockId: null, lLensPrice: 0,
+    lensQty: 0.5, 
+    frame: "", 
+    frameQty: 1,
+    advance: 0, 
+    jobDelDate: "", 
+    notes: "",
+    discount: 0, 
+    consultation: 0,
+    lensPrice: 0, 
+    framePrice: 0,
+    
   };
 
   const [formData, setFormData] = useState(initialState);
@@ -64,12 +85,15 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
 
   // --- AUTO CALCULATIONS ---
   const calculatedTotal = useMemo(() => {
-    const lp = (Number(formData.lensPrice) || 0) * (Number(formData.lensQty) || 0);
+    const rp = Number(formData.rLensPrice || 0);
+    const lp = Number(formData.lLensPrice || 0);
     const fp = (Number(formData.framePrice) || 0) * (Number(formData.frameQty) || 0);
     const cons = Number(formData.consultation || 0);
     const disc = Number(formData.discount || 0);
-    return (lp + fp + cons) - disc;
-  }, [formData.lensPrice, formData.lensQty, formData.framePrice, formData.frameQty, formData.consultation, formData.discount]);
+    
+    // Total = (Sum of both lenses + frames + consultation) - discount
+    return (rp + lp + fp + cons) - disc;
+  }, [formData.rLensPrice, formData.lLensPrice, formData.framePrice, formData.frameQty, formData.consultation, formData.discount]);
 
   const balance = calculatedTotal - Number(formData.advance || 0);
 
@@ -94,38 +118,47 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const submissionData = { 
-        ...formData, 
-        total: calculatedTotal, // Pass the auto-calculated total
-        balance: balance,
-        patientId: parseInt(formData.patientId), 
-        lensQty: parseFloat(formData.lensQty),
-        frameQty: parseInt(formData.frameQty),
-        lensPrice: Number(formData.lensPrice || 0),
-        framePrice: Number(formData.framePrice || 0),
-        lensStockId: formData.lensStockId ? parseInt(formData.lensStockId) : null,
-        frameStockId: formData.frameStockId ? parseInt(formData.frameStockId) : null,
-      };
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  try {
+    const submissionData = { 
+      ...formData, 
+      total: calculatedTotal,
+      balance: balance,
+      patientId: parseInt(formData.patientId), 
 
-      if (editingCard) {
-        await jobCardService.updateJobCard(editingCard.id, submissionData);
-        toast.success("Job Card updated!");
-      } else {
-        await jobCardService.createJobCard(submissionData);
-        toast.success("Job Card created!");
-      }
-      onJobCardAdded(); 
-      onClose();
-    } catch (error) {
-      toast.error("Operation failed.");
-    } finally {
-      setLoading(false);
+      rLensQty: formData.rLens ? 0.5 : 0,
+      lLensQty: formData.lLens ? 0.5 : 0,
+      // Ensure specific lens prices are numbers
+      rLensPrice: Number(formData.rLensPrice),
+      lLensPrice: Number(formData.lLensPrice),
+
+      framePrice: Number(formData.framePrice),
+      consultation: Number(formData.consultation),
+      discount: Number(formData.discount),
+      advance: Number(formData.advance),
+      // IDs
+      rLensStockId: formData.rLensStockId ? parseInt(formData.rLensStockId) : null,
+      lLensStockId: formData.lLensStockId ? parseInt(formData.lLensStockId) : null,
+      frameStockId: formData.frameStockId ? parseInt(formData.frameStockId) : null,
+    };
+
+    if (editingCard) {
+      await jobCardService.updateJobCard(editingCard.id, submissionData);
+      toast.success("Job Card updated!");
+    } else {
+      await jobCardService.createJobCard(submissionData);
+      toast.success("Job Card created!");
     }
-  };
+    onJobCardAdded(); 
+    onClose();
+  } catch (error) {
+    toast.error("Operation failed.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (!isOpen) return null;
 
@@ -202,48 +235,75 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
             </div>
           </div>
 
-          {/* Section 3: Inventory Dropdowns & Quantities */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="flex gap-2">
-              <div className="flex-1 space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Lens Selection</label>
-                <select name="lenses" value={formData.lenses} onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold shadow-sm focus:ring-2 focus:ring-indigo-500">
-                  <option value="">-- Select Lens --</option>
-                  {lensOptions.map(l => (
-                    <option key={l.id} value={l.name}>{l.name} (Stock: {l.qty})</option>
-                  ))}
-                </select>
-              </div>
-              <div className="w-24 space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Qty</label>
-                <select name="lensQty" value={formData.lensQty} onChange={handleChange}
-                  className="w-full px-2 py-2.5 bg-indigo-50 border border-indigo-200 rounded-xl text-sm font-bold text-indigo-700 outline-none">
-                  {[0, 0.5, 1, 1.5, 2, 2.5, 3].map(q => <option key={q} value={q}>{q.toFixed(1)}</option>)}
-                </select>
-              </div>
-            </div>
+          {/* Section 3: Detailed Inventory Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* LENS SELECTION (SPLIT) */}
+              <div className="space-y-4 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
+                <h4 className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Lens Configuration</h4>
+                
+                {/* Right Eye Lens */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Right Eye (OD) Lens</label>
+                  <select 
+                    name="rLens" 
+                    value={formData.rLens} 
+                    onChange={(e) => {
+                      const selected = lensOptions.find(l => l.name === e.target.value);
+                      setFormData(prev => ({
+                        ...prev, 
+                        rLens: e.target.value,
+                        rLensStockId: selected?.id || null,
+                        rLensPrice: selected?.priceKsh || 0
+                      }));
+                    }}
+                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
+                  >
+                    <option value="">-- Select Right Lens --</option>
+                    {lensOptions.map(l => <option key={l.id} value={l.name}>{l.name} (Ksh {l.priceKsh})</option>)}
+                  </select>
+                </div>
 
-            <div className="flex gap-2">
-              <div className="flex-1 space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Frame Selection</label>
-                <select name="frame" value={formData.frame} onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold shadow-sm focus:ring-2 focus:ring-indigo-500">
-                  <option value="">-- Select Frame --</option>
-                  {frameOptions.map(f => (
-                    <option key={f.id} value={f.name}>{f.name} ({f.code})</option>
-                  ))}
-                </select>
+                {/* Left Eye Lens */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Left Eye (OS) Lens</label>
+                  <select 
+                    name="lLens" 
+                    value={formData.lLens} 
+                    onChange={(e) => {
+                      const selected = lensOptions.find(l => l.name === e.target.value);
+                      setFormData(prev => ({
+                        ...prev, 
+                        lLens: e.target.value,
+                        lLensStockId: selected?.id || null,
+                        lLensPrice: selected?.priceKsh || 0
+                      }));
+                    }}
+                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
+                  >
+                    <option value="">-- Select Left Lens --</option>
+                    {lensOptions.map(l => <option key={l.id} value={l.name}>{l.name} (Ksh {l.priceKsh})</option>)}
+                  </select>
+                </div>
               </div>
-              <div className="w-24 space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Qty</label>
-                <select name="frameQty" value={formData.frameQty} onChange={handleChange}
-                  className="w-full px-2 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-bold text-emerald-700 outline-none">
-                  {[0, 1, 2, 3, 4].map(q => <option key={q} value={q}>{q}</option>)}
-                </select>
+
+              {/* FRAME SELECTION (REMAINS SAME) */}
+              <div className="space-y-4 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
+                <h4 className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Frame Configuration</h4>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Frame Selection</label>
+                  <select name="frame" value={formData.frame} onChange={handleChange}
+                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold">
+                    <option value="">-- Select Frame --</option>
+                    {frameOptions.map(f => <option key={f.id} value={f.name}>{f.name} ({f.code})</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Frame Qty</label>
+                  <input type="number" name="frameQty" value={formData.frameQty} onChange={handleChange}
+                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold" />
+                </div>
               </div>
             </div>
-          </div>
 
           {/* Section 4: Other Measurements */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -287,23 +347,31 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 
                 {/* Left Side: Line Item Breakdown */}
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] border-b border-slate-800 pb-2">
-                    Invoice Breakdown
-                  </h4>
-                  
+                {/* Section 6: Revised Invoice Breakdown */}
                   <div className="space-y-3">
-                    {/* Lenses Calculation */}
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-400">Lenses ({Number(formData.lensPrice).toLocaleString()} × {formData.lensQty})</span>
-                      <span className="font-mono font-bold">Ksh {(Number(formData.lensPrice) * Number(formData.lensQty)).toLocaleString()}</span>
-                    </div>
+                    {/* Right Lens */}
+                    {formData.rLens && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-400">Right Lens ({formData.rLens})</span>
+                        <span className="font-mono font-bold">Ksh {Number(formData.rLensPrice).toLocaleString()}</span>
+                      </div>
+                    )}
+
+                    {/* Left Lens */}
+                    {formData.lLens && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-400">Left Lens ({formData.lLens})</span>
+                        <span className="font-mono font-bold">Ksh {Number(formData.lLensPrice).toLocaleString()}</span>
+                      </div>
+                    )}
 
                     {/* Frame Calculation */}
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-400">Frame ({Number(formData.framePrice).toLocaleString()} × {formData.frameQty})</span>
-                      <span className="font-mono font-bold">Ksh {(Number(formData.framePrice) * Number(formData.frameQty)).toLocaleString()}</span>
-                    </div>
+                    {formData.frame && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-400">Frame ({formData.frameQty} units)</span>
+                        <span className="font-mono font-bold">Ksh {(Number(formData.framePrice) * Number(formData.frameQty)).toLocaleString()}</span>
+                      </div>
+                    )}
 
                     {/* Consultation */}
                     <div className="flex justify-between items-center text-sm">
@@ -311,21 +379,14 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
                       <span className="font-mono font-bold">Ksh {Number(formData.consultation).toLocaleString()}</span>
                     </div>
 
-                    {/* Discount (Only shows if > 0) */}
+                    {/* Discount */}
                     {Number(formData.discount) > 0 && (
                       <div className="flex justify-between items-center text-sm text-rose-400">
                         <span>Discount</span>
                         <span className="font-mono font-bold">- Ksh {Number(formData.discount).toLocaleString()}</span>
                       </div>
                     )}
-
-                    {/* Amount Paid Highlights */}
-                    <div className="flex justify-between items-center text-sm text-emerald-400 pt-2 border-t border-slate-800">
-                      <span>Amount Paid (Advance)</span>
-                      <span className="font-mono font-bold">Ksh {Number(formData.advance).toLocaleString()}</span>
-                    </div>
                   </div>
-                </div>
 
                 {/* Right Side: Final Totals & Actions */}
                 <div className="flex flex-col justify-between space-y-6">
