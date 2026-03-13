@@ -12,6 +12,8 @@ export default function Createsale() {
   const [customerId, setCustomerId] = useState('');
   const [discount, setDiscount] = useState(0);
   const [referenceNumber, setReferenceNumber] = useState('');
+  const [etimsReceipt, setEtimsReceipt] = useState('');
+  const [etimsAmount, setEtimsAmount] = useState('');
   
   // Filter States
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,6 +101,8 @@ export default function Createsale() {
         customerId,
         referenceNumber,
         discount: parseFloat(discount) || 0,
+        etimsReceipt: etimsReceipt || null,
+        etimsAmount: etimsAmount ? parseFloat(etimsAmount) : null,
         items: cart.map(item => ({
           stockId: item.id,
           quantity: item.cartQty,
@@ -111,6 +115,8 @@ export default function Createsale() {
       setDiscount(0);
       setCustomerId('');
       setReferenceNumber('');
+      setEtimsReceipt('');
+      setEtimsAmount('');
       loadStocks();
     } catch (err) {
       toast.error("Failed to process sale");
@@ -319,6 +325,30 @@ export default function Createsale() {
                     </div>
                   </div>
                 </div>
+
+                <div className="grid grid-cols-2 gap-3 border-t border-slate-800/50 pt-3">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-1 tracking-widest">eTIMS Receipt (Opt)</label>
+                  <input 
+                    type="text"
+                    placeholder="CU-01-..."
+                    className="w-full px-3 py-1.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white outline-none focus:ring-1 focus:ring-emerald-500 text-xs font-mono placeholder:text-slate-600"
+                    value={etimsReceipt}
+                    onChange={(e) => setEtimsReceipt(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-1 tracking-widest">eTIMS Amount (Opt)</label>
+                  <input 
+                    type="number"
+                    placeholder="0.00"
+                    className="w-full px-3 py-1.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white outline-none focus:ring-1 focus:ring-emerald-500 text-xs font-mono placeholder:text-slate-600"
+                    value={etimsAmount}
+                    onChange={(e) => setEtimsAmount(e.target.value)}
+                  />
+                </div>
+              </div>
+              
               </div>
             </div>
 

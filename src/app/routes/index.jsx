@@ -6,11 +6,12 @@ import ProtectedRoute from "./ProtectedRoute";
 // Pages
 import Overview from "../../pages/Overview"; 
 import Expenses from "../../pages/Expenses";
-import Orders from "../../pages/Orders";
 import Patients from "../../pages/Patients";
 import Sales from "../../pages/Sales";
 import Stocks from "../../pages/Stocks";
 import Users from "../../pages/Users";
+import Containers from "../../pages/Containers";
+import ContainerDetail from "../../pages/ContainerDetail";
 import Createsale from "../../pages/Createsale";
 import Suppliers from "../../pages/Suppliers";
 import Customers from "../../pages/Customers";
@@ -30,7 +31,6 @@ export const routes = [
           { index: true, element: <Navigate to="/dashboard/overview" replace /> },
           { path: "overview", element: <Overview /> },
           { path: "expenses", element: <Expenses /> },
-          { path: "orders", element: <Orders /> },
           { path: "patients", element: <Patients /> },
           { path: "patients/:id", element: <PatientHistory /> },
           { path: "sales", element: <Sales /> },
@@ -40,7 +40,8 @@ export const routes = [
           { path: "customers", element: <Customers /> },
           { path: "reports", element: <Reports /> },
           { path: "users", element: <Users /> },
-          
+          { path: "containers", element: <Containers /> },
+          { path: "containers/:id", element: <ContainerDetail /> },     
         ],
       },
     ],

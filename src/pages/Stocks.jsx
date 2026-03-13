@@ -93,27 +93,29 @@ const filteredStocks = useMemo(() => {
   };
 
   const exportToExcel = (dataToExport, fileName) => {
-    // 1. Prepare the data (Optional: formatting column headers)
-    const formattedData = dataToExport.map(item => ({
-      'Item Name': item.name,
-      'Code': item.code,
-      'Category': item.type,
-      'Quantity': item.qty,
-      'Price (KSH)': item.priceKsh,
-      'Price (USD)': item.priceUsd,
-      'Supplier': item.supplier,
-      'Date Added': new Date(item.createdAt).toLocaleDateString(),
-    }));
+  const formattedData = dataToExport.map(item => ({
+    'supplierName': item.supplier || '',
+    'name': item.name || '',
+    'code': item.code || '',
+    'type': item.type || '',
+    'sph': item.sph !== null ? Number(item.sph) : '',
+    'cyl': item.cyl !== null ? Number(item.cyl) : '',
+    'axis': item.axis !== null ? Number(item.axis) : '',
+    'index': item.index || '',
+    'wholesalePrice': item.wholesalePrice !== null ? Number(item.wholesalePrice) : '',
+    'priceKsh': item.priceKsh !== null ? Number(item.priceKsh) : '',
+    'priceUsd': item.priceUsd !== null ? Number(item.priceUsd) : '',
+    'lensCategory': item.lensCategory || '',
+    'quantityOrdered': item.qty !== null ? Number(item.qty) : '',
+    'landedCost': item.costKsh !== null ? Number(item.costKsh) : '',
+  }));
 
-    // 2. Create worksheet
-    const worksheet = XLSX.utils.json_to_sheet(formattedData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory");
-
-    // 3. Download the file
-    XLSX.writeFile(workbook, `${fileName}.xlsx`);
-    toast.success(`${fileName} exported successfully!`);
-  };
+  const worksheet = XLSX.utils.json_to_sheet(formattedData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory");
+  XLSX.writeFile(workbook, `${fileName}.xlsx`);
+  toast.success(`${fileName} exported successfully!`);
+};
 
   // Helper for Low Stock
   const exportLowStock = () => {

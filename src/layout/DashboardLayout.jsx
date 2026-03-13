@@ -6,7 +6,7 @@ import {
   UsersRound, BarChart3, Package, Users,
   LogOut, ChevronLeft, ChevronRight,
   Truck, CreditCard, ClipboardList, Settings,
-  Store
+  Store, BoxesIcon
 } from 'lucide-react';
 import Logo from "../assets/eyeopticslogo.jpeg";
 
@@ -25,7 +25,7 @@ const DashboardLayout = () => {
     { name: 'Expenses', path: 'expenses', icon: <Receipt size={20} />, color: 'text-rose-400' },
     { name: 'Suppliers', path: 'suppliers', icon: <Truck size={20} />, color: 'text-sky-400' },
     { name: 'Customers', path: 'customers', icon: <Users size={20} />, color: 'text-cyan-400' },
-    { name: 'Orders', path: 'orders', icon: <ShoppingCart size={20} />, color: 'text-amber-400' },
+    { name: 'Containers', path: 'containers', icon: <BoxesIcon size={20} />, color: 'text-teal-400' },
     { name: 'Patients', path: 'patients', icon: <UsersRound size={20} />, color: 'text-emerald-400' },
     { name: 'Create Sale', path: 'createsale', icon: <CreditCard size={20} />, color: 'text-indigo-400' },
     { name: 'Sales', path: 'sales', icon: <BarChart3 size={20} />, color: 'text-purple-400' },

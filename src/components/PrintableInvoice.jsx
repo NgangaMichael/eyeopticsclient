@@ -117,6 +117,29 @@ const PrintableInvoice = React.forwardRef(({ sale }, ref) => {
         </div>
       </div>
 
+      {/* eTIMS Section - Only shows if data exists */}
+      {(sale.etimsReceipt || sale.etimsAmount) && (
+        <div className="mt-4 p-4 border-2 border-emerald-100 bg-emerald-50/30 rounded-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[8px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-widest">
+            Fiscal Data
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {sale.etimsReceipt && (
+              <div>
+                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-tighter">eTIMS Receipt</p>
+                <p className="font-mono text-sm font-bold text-slate-700">{sale.etimsReceipt}</p>
+              </div>
+            )}
+            {sale.etimsAmount && (
+              <div className="text-right">
+                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-tighter">Reported Amount</p>
+                <p className="font-bold text-slate-700">Ksh {Number(sale.etimsAmount).toLocaleString()}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Terms & Footer - Replicating Job Card Footer */}
       <div className="mt-12 pt-12 border-t border-slate-100">
         <div className="grid grid-cols-2 gap-12 text-[10px] text-slate-400">

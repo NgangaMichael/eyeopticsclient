@@ -88,11 +88,11 @@ const StockModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
             {numberInput('Quantity', 'qty')}
             {/* {numberInput('Price (USD)', 'priceUsd')} */}
             {numberInput('Price (KSh)', 'priceKsh')}
-            {numberInput('App Price', 'appPrice')}
+            {/* {numberInput('App Price', 'appPrice')} */}
             {numberInput('Cost (USD)', 'costUsd')}
             {numberInput('Cost (KSh)', 'costKsh')}
-            {numberInput('Prev Cost per Bale', 'prevCostPb')}
-            {numberInput('Profit per Bale', 'profitPerBale')}
+            {/* {numberInput('Prev Cost per Bale', 'prevCostPb')} */}
+            {/* {numberInput('Profit per Bale', 'profitPerBale')} */}
             {textInput('Bought', 'bought')}
             {/* {textInput('ETR', 'etr')} */}
             <div>
@@ -109,7 +109,7 @@ const StockModal = ({ isOpen, onClose, onSubmit, initialData, mode }) => {
               />
             </div>
             {numberInput('FOB', 'fob')}
-            {numberInput('Loading', 'loading')}
+            {/* {numberInput('Loading', 'loading')} */}
             {textInput('Supplier', 'supplier')}
 
             <div className="col-span-2">

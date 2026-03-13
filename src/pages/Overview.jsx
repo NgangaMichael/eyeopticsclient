@@ -9,7 +9,7 @@ import { patientService } from "../api/services/patientService";
 import { saleService } from "../api/services/saleService";
 import { stockService } from "../api/services/stockService";
 import { expenseService } from "../api/services/expenseService";
-import { orderService } from "../api/services/orderService";
+import { containerService } from "../api/services/containerService";
 import { useNavigate } from 'react-router-dom';
 
 const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -23,7 +23,7 @@ const Overview = () => {
     sales: [],
     stocks: [],
     expenses: [],
-    orders: []
+    containers: []
   });
 
   useEffect(() => {
@@ -33,15 +33,15 @@ const Overview = () => {
   const loadDashboardData = async () => {
     setIsLoading(true);
     try {
-      const [patients, sales, stocks, expenses, orders] = await Promise.all([
+      const [patients, sales, stocks, expenses, containers] = await Promise.all([
         patientService.getAllPatients(),
         saleService.getAllSales(),
         stockService.getAllStocks(),
         expenseService.getAllExpenses(),
-        orderService.getAllOrders()
+        containerService.getAllContainers(),
       ]);
       
-      setDashboardData({ patients, sales, stocks, expenses, orders });
+      setDashboardData({ patients, sales, stocks, expenses, containers });
     } catch (error) {
       console.error("Failed to load dashboard data:", error);
     } finally {
@@ -49,7 +49,6 @@ const Overview = () => {
     }
   };
 
-  // Calculate metrics
   const metrics = React.useMemo(() => {
     const now = new Date();
     const thisMonth = now.getMonth();
@@ -58,14 +57,14 @@ const Overview = () => {
     const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
 
     // Total Revenue (this month)
-    const thisMonthSales = dashboardData.sales.filter(s => {
+    const thisMonthSales = (dashboardData.sales || []).filter(s => {
       const saleDate = new Date(s.createdAt);
       return saleDate.getMonth() === thisMonth && saleDate.getFullYear() === thisYear;
     });
     const totalRevenue = thisMonthSales.reduce((sum, s) => sum + Number(s.total || 0), 0);
 
     // Last month revenue for comparison
-    const lastMonthSales = dashboardData.sales.filter(s => {
+    const lastMonthSales = (dashboardData.sales || []).filter(s => {
       const saleDate = new Date(s.createdAt);
       return saleDate.getMonth() === lastMonth && saleDate.getFullYear() === lastMonthYear;
     });
@@ -75,14 +74,14 @@ const Overview = () => {
       : totalRevenue > 0 ? 100 : 0;
 
     // New Patients (this month)
-    const thisMonthPatients = dashboardData.patients.filter(p => {
+    const thisMonthPatients = (dashboardData.patients || []).filter(p => {
       const patientDate = new Date(p.createdAt);
       return patientDate.getMonth() === thisMonth && patientDate.getFullYear() === thisYear;
     });
     const newPatients = thisMonthPatients.length;
 
     // Last month patients for comparison
-    const lastMonthPatients = dashboardData.patients.filter(p => {
+    const lastMonthPatients = (dashboardData.patients || []).filter(p => {
       const patientDate = new Date(p.createdAt);
       return patientDate.getMonth() === lastMonth && patientDate.getFullYear() === lastMonthYear;
     });
@@ -98,26 +97,26 @@ const Overview = () => {
       : itemsSold > 0 ? 100 : 0;
 
     // Low Stock Alert Count
-    const lowStockCount = dashboardData.stocks.filter(s => s.qty <= 3).length;
+    const lowStockCount = (dashboardData.stocks || []).filter(s => s.qty <= 3).length;
 
-    // Pending Orders
-    const pendingOrders = dashboardData.orders.filter(o => o.status === 'pending').length;
+    // Pending Containers
+    const pendingContainers = (dashboardData.containers || []).filter(c => c.status === 'pending').length;
 
     // Today's Sales
     const today = new Date().toDateString();
-    const todaySales = dashboardData.sales.filter(s => 
+    const todaySales = (dashboardData.sales || []).filter(s => 
       new Date(s.createdAt).toDateString() === today
     );
     const todayRevenue = todaySales.reduce((sum, s) => sum + Number(s.total || 0), 0);
 
     // This Month Expenses
-    const thisMonthExpenses = dashboardData.expenses.filter(e => {
+    const thisMonthExpenses = (dashboardData.expenses || []).filter(e => {
       const expenseDate = new Date(e.createdAt);
       return expenseDate.getMonth() === thisMonth && expenseDate.getFullYear() === thisYear;
     });
     const totalExpenses = thisMonthExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
-    // Net Profit (Revenue - Expenses)
+    // Net Profit
     const netProfit = totalRevenue - totalExpenses;
 
     return {
@@ -128,7 +127,7 @@ const Overview = () => {
       itemsSold,
       itemsGrowth,
       lowStockCount,
-      pendingOrders,
+      pendingContainers,
       todayRevenue,
       todaySales: todaySales.length,
       totalExpenses,
@@ -136,16 +135,14 @@ const Overview = () => {
     };
   }, [dashboardData]);
 
-  // Recent activity (last 5 sales)
   const recentSales = React.useMemo(() => {
-    return dashboardData.sales
+    return (dashboardData.sales || [])
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .slice(0, 5);
   }, [dashboardData.sales]);
 
-  // Low stock items
   const lowStockItems = React.useMemo(() => {
-    return dashboardData.stocks
+    return (dashboardData.stocks || [])
       .filter(s => s.qty <= 3)
       .sort((a, b) => a.qty - b.qty)
       .slice(0, 5);
@@ -203,7 +200,7 @@ const Overview = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
-      {/* Header Section */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -222,8 +219,9 @@ const Overview = () => {
             Refresh
           </button>
           <button 
-          onClick={() => navigate('/dashboard/reports')}
-          className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-600 transition-all shadow-lg shadow-slate-200 text-sm font-bold">
+            onClick={() => navigate('/dashboard/reports')}
+            className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-600 transition-all shadow-lg shadow-slate-200 text-sm font-bold"
+          >
             <TrendingUp size={18} />
             View Reports
           </button>
@@ -284,9 +282,6 @@ const Overview = () => {
                         <td className="px-4 py-4 font-mono text-xs font-bold text-indigo-600">
                           #INV-{sale.id.toString().padStart(4, '0')}
                         </td>
-                        {/* <td className="px-4 py-4 font-bold text-slate-700">
-                          {sale.customer?.name || 'Walk-in'}
-                        </td> */}
                         <td className="px-6 py-4">
                           <div className="font-bold text-slate-800">
                             {sale.customer 
@@ -346,16 +341,17 @@ const Overview = () => {
                   ))}
                 </div>
                 <button 
-                onClick={() => navigate('/dashboard/stocks')}
-                className="w-full py-3 bg-white text-rose-600 rounded-xl font-bold text-sm hover:bg-rose-50 transition-colors shadow-lg">
+                  onClick={() => navigate('/dashboard/stocks')}
+                  className="w-full py-3 bg-white text-rose-600 rounded-xl font-bold text-sm hover:bg-rose-50 transition-colors shadow-lg"
+                >
                   View Inventory
                 </button>
               </div>
             </div>
           )}
 
-          {/* Pending Orders */}
-          {metrics.pendingOrders > 0 && (
+          {/* Pending Containers */}
+          {metrics.pendingContainers > 0 && (
             <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl shadow-amber-200">
               <div className="absolute top-0 right-0 p-4 opacity-20">
                 <FileText size={80} />
@@ -363,14 +359,17 @@ const Overview = () => {
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-2">
                   <Package size={24} />
-                  <h3 className="text-xl font-bold">Pending Orders</h3>
+                  <h3 className="text-xl font-bold">Pending Containers</h3>
                 </div>
                 <p className="text-amber-100 text-sm mb-4 font-medium">
-                  {metrics.pendingOrders} order{metrics.pendingOrders !== 1 ? 's' : ''} awaiting 
+                  {metrics.pendingContainers} container{metrics.pendingContainers !== 1 ? 's' : ''} awaiting
                   delivery and processing.
                 </p>
-                <button className="w-full py-3 bg-white text-amber-600 rounded-xl font-bold text-sm hover:bg-amber-50 transition-colors shadow-lg">
-                  View Orders
+                <button
+                  onClick={() => navigate('/dashboard/containers')}
+                  className="w-full py-3 bg-white text-amber-600 rounded-xl font-bold text-sm hover:bg-amber-50 transition-colors shadow-lg"
+                >
+                  View Containers
                 </button>
               </div>
             </div>
@@ -387,15 +386,15 @@ const Overview = () => {
             <div className="space-y-4">
               <div className="flex justify-between text-sm">
                 <span className="text-slate-400">Total Patients</span>
-                <span className="text-white font-bold">{dashboardData.patients.length}</span>
+                <span className="text-white font-bold">{(dashboardData.patients || []).length}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-400">Stock Items</span>
-                <span className="text-white font-bold">{dashboardData.stocks.length}</span>
+                <span className="text-white font-bold">{(dashboardData.stocks || []).length}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-400">Total Sales</span>
-                <span className="text-white font-bold">{dashboardData.sales.length}</span>
+                <span className="text-white font-bold">{(dashboardData.sales || []).length}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-400">Monthly Expenses</span>
@@ -412,27 +411,27 @@ const Overview = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-4 border border-blue-200">
           <p className="text-blue-600 text-xs font-bold uppercase mb-1">Total Patients</p>
-          <p className="text-2xl font-extrabold text-blue-900">{dashboardData.patients.length}</p>
+          <p className="text-2xl font-extrabold text-blue-900">{(dashboardData.patients || []).length}</p>
         </div>
         <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-2xl p-4 border border-emerald-200">
           <p className="text-emerald-600 text-xs font-bold uppercase mb-1">Stock Value</p>
           <p className="text-2xl font-extrabold text-emerald-900">
-            KSh {dashboardData.stocks.reduce((sum, s) => sum + (s.qty * s.priceKsh), 0).toLocaleString()}
+            KSh {(dashboardData.stocks || []).reduce((sum, s) => sum + (Number(s.qty) * Number(s.priceKsh)), 0).toLocaleString()}
           </p>
         </div>
         <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-4 border border-purple-200">
           <p className="text-purple-600 text-xs font-bold uppercase mb-1">Avg Sale</p>
           <p className="text-2xl font-extrabold text-purple-900">
-            KSh {dashboardData.sales.length > 0 
-              ? Math.round(dashboardData.sales.reduce((sum, s) => sum + Number(s.total), 0) / dashboardData.sales.length).toLocaleString()
+            KSh {(dashboardData.sales || []).length > 0 
+              ? Math.round((dashboardData.sales || []).reduce((sum, s) => sum + Number(s.total), 0) / dashboardData.sales.length).toLocaleString()
               : '0'}
           </p>
         </div>
         <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl p-4 border border-indigo-200">
           <p className="text-indigo-600 text-xs font-bold uppercase mb-1">Conversion Rate</p>
           <p className="text-2xl font-extrabold text-indigo-900">
-            {dashboardData.patients.length > 0 
-              ? Math.round((dashboardData.sales.length / dashboardData.patients.length) * 100)
+            {(dashboardData.patients || []).length > 0 
+              ? Math.round(((dashboardData.sales || []).length / dashboardData.patients.length) * 100)
               : 0}%
           </p>
         </div>
