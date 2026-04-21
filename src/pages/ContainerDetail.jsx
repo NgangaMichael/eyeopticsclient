@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { ArrowLeft, FileUp, Plus, Package, Trash2, CheckCircle2, BoxesIcon } from 'lucide-react';
+import { ArrowLeft, FileUp, Plus, Package, Trash2, CheckCircle2, BoxesIcon, Edit2 } from 'lucide-react';
 import Papa from 'papaparse';
 import { containerService } from '../api/services/containerService';
 import ContainerItemModal from '../components/ContainerItemModal';
@@ -15,6 +15,7 @@ export default function ContainerDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [isReceiving, setIsReceiving] = useState(false);
   const [itemModalOpen, setItemModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
 
   const loadContainer = async () => {
     try {
@@ -75,6 +76,7 @@ export default function ContainerDetail() {
             nearAdd: row.nearAdd ? parseFloat(row.nearAdd) : null,
             quantityOrdered: parseFloat(row.quantityOrdered) || 1,
             landedCost: parseFloat(row.landedCost) || 0,
+            costKsh: parseFloat(row.costKsh) || parseFloat(row.landedCost) || 0,
             priceKsh: parseFloat(row.priceKsh) || 0,
             priceUsd: parseFloat(row.priceUsd) || 0,
             wholesalePrice: row.wholesalePrice ? parseFloat(row.wholesalePrice) : null,
@@ -118,6 +120,30 @@ export default function ContainerDetail() {
 
   const isReceived = container.status === 'received';
   const hasItems = container.items?.length > 0;
+
+ const handleFormSubmit = async (formData) => {
+  try {
+    if (editingItem) {
+      // Use the ID from the editingItem state
+      await containerService.updateItem(id, editingItem.id, formData);
+      toast.success("Item updated successfully");
+    } else {
+      await containerService.addItem(id, formData);
+      toast.success("Item added successfully");
+    }
+    setItemModalOpen(false);
+    setEditingItem(null); 
+    loadContainer();
+  } catch (err) {
+    toast.error(err.response?.data?.message || "Action failed");
+  }
+};
+
+  // Function to trigger edit
+  const handleEditClick = (item) => {
+    setEditingItem(item);
+    setItemModalOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -200,84 +226,104 @@ export default function ContainerDetail() {
       )}
 
       {/* Items Table */}
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-        {!hasItems ? (
-          <div className="text-center py-20 text-slate-400">
-            <BoxesIcon size={48} className="mx-auto mb-4 opacity-30" />
-            <p className="font-bold text-lg">Container is empty</p>
-            <p className="text-sm">Import a CSV or add items manually to get started</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50 border-b border-slate-100">
-                <tr>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Item</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Type</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Powers</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Qty</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Cost</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Price</th>
-                  {!isReceived && (
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Actions</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {container.items.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-slate-800">{item.name}</div>
-                      <div className="text-xs font-mono text-slate-400">{item.code}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
-                        item.type === 'Lens' ? 'bg-indigo-100 text-indigo-700' : 'bg-purple-100 text-purple-700'
-                      }`}>
-                        {item.type}
-                      </span>
-                      {item.lensCategory && (
-                        <div className="text-[10px] text-slate-400 mt-1">{item.lensCategory}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {item.sph != null ? (
-                        <div className="flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md text-[10px] font-bold border border-indigo-100 w-fit">
-                          <span>S: {item.sph}</span>
-                          {item.cyl != null && <><span className="text-indigo-200">|</span><span>C: {item.cyl}</span></>}
-                          {item.axis != null && <><span className="text-indigo-200">|</span><span>A: {item.axis}°</span></>}
-                          {item.nearAdd != null && <><span className="text-indigo-200">|</span><span>Add: {item.nearAdd}</span></>}
-                        </div>
-                      ) : (
-                        <span className="text-slate-300 text-xs">—</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 font-bold text-slate-700">{Number(item.quantityOrdered)}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
-                      <span className="text-xs text-slate-400 mr-1">KSh</span>
-                      {Number(item.landedCost).toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-slate-700">
-                      <span className="text-xs text-slate-400 mr-1">KSh</span>
-                      {Number(item.priceKsh).toLocaleString()}
-                    </td>
-                    {!isReceived && (
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* Items Table */}
+<div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+  {!hasItems ? (
+    <div className="text-center py-20 text-slate-400">
+      <BoxesIcon size={48} className="mx-auto mb-4 opacity-30" />
+      <p className="font-bold text-lg">Container is empty</p>
+    </div>
+  ) : (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left">
+        <thead className="bg-slate-50 border-b border-slate-100">
+          <tr>
+            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Item</th>
+            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Type</th>
+            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Powers</th>
+            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-center">Qty</th>
+            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Actual Cost</th>
+            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Retail Price</th>
+            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Wholesale</th>
+            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Landed Cost</th>
+            {!isReceived && (
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Actions</th>
+            )}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-50">
+          {container.items.map((item) => (
+            <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+              <td className="px-6 py-4">
+                <div className="font-bold text-slate-800">{item.name}</div>
+                <div className="text-xs font-mono text-slate-400">{item.code}</div>
+              </td>
+              <td className="px-6 py-4">
+                <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
+                  item.type === 'Lens' ? 'bg-indigo-100 text-indigo-700' : 'bg-purple-100 text-purple-700'
+                }`}>
+                  {item.type}
+                </span>
+              </td>
+              <td className="px-6 py-4">
+                {item.sph != null ? (
+                  <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 text-[10px] font-bold">
+                    <span>S: {item.sph}</span>
+                    {item.cyl != null && <span>| C: {item.cyl}</span>}
+                  </div>
+                ) : <span className="text-slate-300">—</span>}
+              </td>
+              <td className="px-6 py-4 font-bold text-slate-700 text-center">
+                {Number(item.quantityOrdered)}
+              </td>
+
+              {/* Actual Cost (costKsh) */}
+              <td className="px-6 py-4 text-sm text-slate-600">
+                <div className="text-[10px] text-slate-400">KSh</div>
+                {Number(item.costKsh || 0).toLocaleString()}
+              </td>
+
+              {/* Retail Price (priceKsh) */}
+              <td className="px-6 py-4 text-sm font-bold text-emerald-700">
+                <div className="text-[10px] text-emerald-400">KSh</div>
+                {Number(item.priceKsh || 0).toLocaleString()}
+              </td>
+
+              {/* Wholesale Price */}
+              <td className="px-6 py-4 text-sm text-indigo-600 font-medium">
+                <div className="text-[10px] text-indigo-300">KSh</div>
+                {Number(item.wholesalePrice || 0).toLocaleString()}
+              </td>
+
+              {/* Landed Cost */}
+              <td className="px-6 py-4 text-sm text-slate-500 italic">
+                <div className="text-[10px] text-slate-400">KSh</div>
+                {Number(item.landedCost || 0).toLocaleString()}
+              </td>
+
+              {!isReceived && (
+                <td className="px-6 py-4 text-right">
+                <button
+                    onClick={() => handleEditClick(item)}
+                    className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all"
+                  >
+                    <Edit2 size={16} /> {/* Import Edit2 from lucide-react */}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteItem(item.id)}
+                    className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</div>
 
       {/* Summary Footer */}
       {hasItems && (
@@ -303,8 +349,12 @@ export default function ContainerDetail() {
 
       <ContainerItemModal
         isOpen={itemModalOpen}
-        onClose={() => setItemModalOpen(false)}
-        onSubmit={handleAddItem}
+        onClose={() => {
+          setItemModalOpen(false);
+          setEditingItem(null);
+        }}
+        onSubmit={handleFormSubmit} // Change this from handleAddItem to handleFormSubmit
+        initialData={editingItem}
       />
     </div>
   );

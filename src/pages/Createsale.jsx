@@ -49,6 +49,19 @@ export default function Createsale() {
   };
 
   // Add item to cart logic
+  // const addToCart = (item) => {
+  //   const existingItem = cart.find(cartItem => cartItem.id === item.id);
+  //   if (existingItem) {
+  //     toast.info("Item already in cart. Adjust quantity on the right.");
+  //     return;
+  //   }
+  //   if (item.qty <= 0) {
+  //     toast.error("Item out of stock");
+  //     return;
+  //   }
+  //   setCart([...cart, { ...item, cartQty: 1, cartPrice: item.wholesalePrice }]);
+  // };
+
   const addToCart = (item) => {
     const existingItem = cart.find(cartItem => cartItem.id === item.id);
     if (existingItem) {
@@ -59,7 +72,12 @@ export default function Createsale() {
       toast.error("Item out of stock");
       return;
     }
-    setCart([...cart, { ...item, cartQty: 1, cartPrice: item.wholesalePrice }]);
+
+    // Check if the item is a lens to set initial quantity to 0.5
+    const isLens = item.type?.toLowerCase() === 'lens';
+    const initialQty = isLens ? 0.5 : 1;
+
+    setCart([...cart, { ...item, cartQty: initialQty, cartPrice: item.wholesalePrice }]);
   };
 
   const updateCartQty = (id, newQty, maxQty, type) => {
@@ -152,7 +170,7 @@ export default function Createsale() {
       <div className="flex flex-col lg:flex-row gap-6">
         
         {/* LEFT SIDE: Inventory Browser (60% width) */}
-        <div className="lg:w-3/5 space-y-6">
+        <div className="lg:w-3/5 flex flex-col h-[calc(100vh-120px)]">
           <header>
             <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Create Sale</h2>
             <p className="text-slate-500">Select items from inventory</p>
@@ -217,63 +235,65 @@ export default function Createsale() {
               </div>
             </div>
           {/* Items Table */}
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50 border-b border-slate-100">
-                <tr>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Item</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Stock</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Wholesale Price</th>
-                  <th className="px-6 py-4 text-right"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {filteredStocks.map(item => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-slate-800">{item.name}</div>
-                      <div className="text-[10px] font-mono text-indigo-500">{item.code}</div>
-                      {/* Logic for Lens specific SPH and CYL */}
-                      {item.type?.toLowerCase() === 'lens' && (item.sph !== null || item.cyl !== null) && (
-                        <div className="flex items-center gap-1 bg-slate-800 text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm">
-                          <span className="text-slate-400">SPH:</span> 
-                          <span>{item.sph > 0 ? `+${item.sph}` : item.sph}</span>
-                          <span className="mx-1 text-slate-600">|</span>
-                          <span className="text-slate-400">CYL:</span> 
-                          <span>{item.cyl > 0 ? `+${item.cyl}` : item.cyl}</span>
-                          <span className="mx-1 text-slate-600">|</span>
-                          <span className="text-slate-400">AX:</span>
-                          <span>{item.axis}°</span>
-                          <span className="mx-1 text-slate-600">|</span>
-                          <span className="text-slate-400">ADD:</span>
-                          <span>{item.nearAdd > 0 ? `+${item.nearAdd}` : item.nearAdd}</span>
-                          <span className="mx-1 text-slate-600">|</span>
-                          <span className="text-slate-400">INDEX:</span>
-                          <span>{item.index}</span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`font-semibold ${item.qty <= 5 ? 'text-rose-500' : 'text-slate-700'}`}>
-                        {parseFloat(item.qty).toString()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-900">
-                      {Number(item.wholesalePrice).toLocaleString()} <span className="text-[10px] text-slate-400">KSH</span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button 
-                        onClick={() => addToCart(item)}
-                        disabled={item.qty <= 0}
-                        className="p-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white disabled:opacity-50 transition-all"
-                      >
-                        <Plus size={20} />
-                      </button>
-                    </td>
+          <div className="flex-grow bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+            <div className="overflow-auto custom-scrollbar">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-slate-50 border-b border-slate-100">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Item</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Stock</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Wholesale Price</th>
+                    <th className="px-6 py-4 text-right"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {filteredStocks.map(item => (
+                    <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-slate-800">{item.name}</div>
+                        <div className="text-[10px] font-mono text-indigo-500">{item.code}</div>
+                        {/* Logic for Lens specific SPH and CYL */}
+                        {item.type?.toLowerCase() === 'lens' && (item.sph !== null || item.cyl !== null) && (
+                          <div className="flex items-center gap-1 bg-slate-800 text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm">
+                            <span className="text-slate-400">SPH:</span> 
+                            <span>{item.sph > 0 ? `+${item.sph}` : item.sph}</span>
+                            <span className="mx-1 text-slate-600">|</span>
+                            <span className="text-slate-400">CYL:</span> 
+                            <span>{item.cyl > 0 ? `+${item.cyl}` : item.cyl}</span>
+                            <span className="mx-1 text-slate-600">|</span>
+                            <span className="text-slate-400">AX:</span>
+                            <span>{item.axis}°</span>
+                            <span className="mx-1 text-slate-600">|</span>
+                            <span className="text-slate-400">ADD:</span>
+                            <span>{item.nearAdd > 0 ? `+${item.nearAdd}` : item.nearAdd}</span>
+                            <span className="mx-1 text-slate-600">|</span>
+                            <span className="text-slate-400">INDEX:</span>
+                            <span>{item.index}</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`font-semibold ${item.qty <= 5 ? 'text-rose-500' : 'text-slate-700'}`}>
+                          {parseFloat(item.qty).toString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-bold text-slate-900">
+                        {Number(item.wholesalePrice).toLocaleString()} <span className="text-[10px] text-slate-400">KSH</span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button 
+                          onClick={() => addToCart(item)}
+                          disabled={item.qty <= 0}
+                          className="p-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white disabled:opacity-50 transition-all"
+                        >
+                          <Plus size={20} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 

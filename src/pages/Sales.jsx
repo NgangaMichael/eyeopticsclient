@@ -5,6 +5,7 @@ import { saleService } from "../api/services/saleService";
 import { toast, ToastContainer } from "react-toastify";
 import { useReactToPrint } from 'react-to-print';
 import PrintableInvoice from '../components/PrintableInvoice';
+import ConsolidatedInvoice from '../components/ConsolidatedInvoice';
 
 export default function Sales() {
   const [sales, setSales] = useState([]);
@@ -83,6 +84,9 @@ export default function Sales() {
   // --- Selection Helpers ---
   const allFilteredSelected = filteredSales.length > 0 && filteredSales.every(s => selectedIds.has(s.id));
   const someSelected = selectedIds.size > 0;
+
+  const bulkInvoiceRef = useRef(null);
+  const [bulkPrintData, setBulkPrintData] = useState([]);
 
   const toggleSelectAll = () => {
     if (allFilteredSelected) {
@@ -171,6 +175,25 @@ export default function Sales() {
     }, 200);
   };
 
+  // 1. New Print Trigger for Bulk
+  const handleBulkPrintTrigger = useReactToPrint({
+    contentRef: bulkInvoiceRef,
+    documentTitle: `Statement_${customerFilter !== 'all' ? customerFilter : 'Invoices'}`,
+    onAfterPrint: () => setBulkPrintData([]),
+  });
+
+  // 2. Logic to gather data and print
+  const handleBulkPrintClick = () => {
+    const selectedSales = sales.filter(s => selectedIds.has(s.id));
+    setBulkPrintData(selectedSales);
+    
+    setTimeout(() => {
+      if (bulkInvoiceRef.current) {
+        handleBulkPrintTrigger();
+      }
+    }, 300);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -252,6 +275,13 @@ export default function Sales() {
             >
               <Layers size={16} />
               Bulk eTIMS Update
+            </button>
+            <button
+              onClick={handleBulkPrintClick}
+              className="flex items-center gap-2 bg-indigo-500 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-indigo-400 transition-all border border-indigo-400"
+            >
+              <Printer size={16} />
+              Print Statement
             </button>
             <button
               onClick={clearSelection}
@@ -390,6 +420,16 @@ export default function Sales() {
       <div style={{ display: 'none' }}>
         <div ref={invoiceRef}>
           <PrintableInvoice sale={printData} />
+        </div>
+        <div ref={bulkInvoiceRef}>
+          <ConsolidatedInvoice 
+            sales={bulkPrintData} 
+            customerName={
+              customerFilter !== 'all' 
+              ? uniqueCustomers.find(c => c.id.toString() === customerFilter)?.name 
+              : "Multiple Customers"
+            } 
+          />
         </div>
       </div>
 

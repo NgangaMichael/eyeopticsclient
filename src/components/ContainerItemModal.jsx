@@ -1,49 +1,81 @@
 import React, { useState, useEffect } from 'react';
 import { X, ChevronDown } from 'lucide-react';
 
-const ContainerItemModal = ({ isOpen, onClose, onSubmit }) => {
+const ContainerItemModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
   const [formData, setFormData] = useState({
-    name: '', code: '', type: 'Lens',
-    lensCategory: 'Stock', index: '',
-    sph: '', cyl: '', axis: '', nearAdd: '',
-    quantityOrdered: '', landedCost: '',
-    priceKsh: '', priceUsd: '', wholesalePrice: '',
+    name: '', 
+    code: '', 
+    type: 'Lens',
+    lensCategory: 'Stock', 
+    index: '',
+    sph: '', 
+    cyl: '', 
+    axis: '', 
+    nearAdd: '',
+    quantityOrdered: '', 
+    costKsh: '', 
+    landedCost: '',
+    priceKsh: '', 
+    priceUsd: '', 
+    wholesalePrice: '',
   });
 
+  // Handle mode switching (Edit vs Add)
   useEffect(() => {
-    if (!isOpen) {
-      setFormData({
-        name: '', code: '', type: 'Lens',
-        lensCategory: 'Stock', index: '',
-        sph: '', cyl: '', axis: '', nearAdd: '',
-        quantityOrdered: '', landedCost: '',
-        priceKsh: '', priceUsd: '', wholesalePrice: '',
-      });
+    if (isOpen) {
+      if (initialData) {
+        // EDIT MODE: Populate with existing item data
+        setFormData({
+          ...initialData,
+          // Convert nulls/undefined to empty strings for controlled inputs
+          sph: initialData.sph ?? '',
+          cyl: initialData.cyl ?? '',
+          axis: initialData.axis ?? '',
+          nearAdd: initialData.nearAdd ?? '',
+          index: initialData.index ?? '',
+          wholesalePrice: initialData.wholesalePrice ?? '',
+          priceUsd: initialData.priceUsd ?? '',
+        });
+      } else {
+        // ADD MODE: Reset to defaults
+        setFormData({
+          name: '', code: '', type: 'Lens',
+          lensCategory: 'Stock', index: '',
+          sph: '', cyl: '', axis: '', nearAdd: '',
+          quantityOrdered: '', costKsh: '', landedCost: '',
+          priceKsh: '', priceUsd: '', wholesalePrice: '',
+        });
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, initialData]);
 
   if (!isOpen) return null;
 
   const isLens = formData.type === 'Lens';
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
       <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-
+        
+        {/* Modal Header */}
         <div className="p-6 border-b flex justify-between items-center bg-slate-50">
-          <h3 className="text-xl font-bold text-slate-800">Add Item to Container</h3>
+          <h3 className="text-xl font-bold text-slate-800">
+            {initialData ? 'Edit Container Item' : 'Add Item to Container'}
+          </h3>
           <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
             <X size={20} />
           </button>
         </div>
 
-        <form
-          onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }}
-          className="p-6 space-y-5 overflow-y-auto"
-        >
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-            {/* Name */}
+            {/* Item Name */}
             <div className="md:col-span-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase">Item Name</label>
               <input
@@ -55,7 +87,7 @@ const ContainerItemModal = ({ isOpen, onClose, onSubmit }) => {
               />
             </div>
 
-            {/* Type */}
+            {/* Type Selector */}
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase">Type</label>
               <div className="relative">
@@ -72,7 +104,7 @@ const ContainerItemModal = ({ isOpen, onClose, onSubmit }) => {
               </div>
             </div>
 
-            {/* Code */}
+            {/* Item Code */}
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase">Item Code</label>
               <input
@@ -84,14 +116,14 @@ const ContainerItemModal = ({ isOpen, onClose, onSubmit }) => {
               />
             </div>
 
-            {/* Quantity */}
+            {/* Cost Price */}
             <div>
-              <label className="text-[10px] font-bold text-slate-500 uppercase">Quantity</label>
+              <label className="text-[10px] font-bold text-slate-500 uppercase">Cost Price (KSh)</label>
               <input
-                required type="number" step="0.5" min="0.5"
+                required type="number" step="0.01" min="0"
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 mt-1 outline-none font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500"
-                value={formData.quantityOrdered}
-                onChange={e => setFormData({ ...formData, quantityOrdered: e.target.value })}
+                value={formData.costKsh}
+                onChange={e => setFormData({ ...formData, costKsh: e.target.value })}
               />
             </div>
 
@@ -106,7 +138,7 @@ const ContainerItemModal = ({ isOpen, onClose, onSubmit }) => {
               />
             </div>
 
-            {/* Price KSh */}
+            {/* Selling/Retail Price */}
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase">Selling Price (KSh)</label>
               <input
@@ -114,17 +146,6 @@ const ContainerItemModal = ({ isOpen, onClose, onSubmit }) => {
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 mt-1 outline-none font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500"
                 value={formData.priceKsh}
                 onChange={e => setFormData({ ...formData, priceKsh: e.target.value })}
-              />
-            </div>
-
-            {/* Price USD */}
-            <div>
-              <label className="text-[10px] font-bold text-slate-500 uppercase">Price (USD)</label>
-              <input
-                type="number" step="0.01" min="0"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 mt-1 outline-none font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500"
-                value={formData.priceUsd}
-                onChange={e => setFormData({ ...formData, priceUsd: e.target.value })}
               />
             </div>
 
@@ -139,11 +160,33 @@ const ContainerItemModal = ({ isOpen, onClose, onSubmit }) => {
               />
             </div>
 
+            {/* Quantity */}
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 uppercase">Quantity</label>
+              <input
+                required type="number" step="1" min="1"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 mt-1 outline-none font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500"
+                value={formData.quantityOrdered}
+                onChange={e => setFormData({ ...formData, quantityOrdered: e.target.value })}
+              />
+            </div>
+
+            {/* Price USD */}
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 uppercase">Price (USD)</label>
+              <input
+                type="number" step="0.01" min="0"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 mt-1 outline-none font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500"
+                value={formData.priceUsd}
+                onChange={e => setFormData({ ...formData, priceUsd: e.target.value })}
+              />
+            </div>
+
             {/* Lens Specific Fields */}
             {isLens && (
               <div className="md:col-span-3 grid grid-cols-2 md:grid-cols-6 gap-3 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
-
-                {/* Category */}
+                
+                {/* Lens Category */}
                 <div className="col-span-2 md:col-span-1">
                   <label className="text-[10px] font-bold text-indigo-500 uppercase">Category</label>
                   <select
@@ -214,11 +257,12 @@ const ContainerItemModal = ({ isOpen, onClose, onSubmit }) => {
             )}
           </div>
 
+          {/* Form Actions */}
           <button
             type="submit"
             className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 shadow-xl transition-all"
           >
-            Add Item
+            {initialData ? 'Update Item' : 'Add Item'}
           </button>
         </form>
       </div>

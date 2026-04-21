@@ -10,4 +10,6 @@ export const ContainerAPI = {
   bulkAddItems: (id, items) => apiClient.post(`/containers/${id}/items/bulk`, { items }),
   deleteItem: (id, itemId) => apiClient.delete(`/containers/${id}/items/${itemId}`),
   receive: (id) => apiClient.post(`/containers/${id}/receive`),
+  updateItem: (id, itemId, data) => apiClient.put(`/containers/${id}/items/${itemId}`, data),
+
 };

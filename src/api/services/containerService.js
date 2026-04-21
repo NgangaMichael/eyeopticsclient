@@ -23,6 +23,7 @@ export const containerService = {
       quantityOrdered: parseFloat(data.quantityOrdered),
       landedCost: parseFloat(data.landedCost),
       priceKsh: parseFloat(data.priceKsh || 0),
+      costKsh: parseFloat(data.costKsh || 0),
       priceUsd: parseFloat(data.priceUsd || 0),
       sph: data.sph ? parseFloat(data.sph) : undefined,
       cyl: data.cyl ? parseFloat(data.cyl) : undefined,
@@ -32,6 +33,25 @@ export const containerService = {
     };
     return (await ContainerAPI.addItem(id, payload)).data;
   },
+
+  // Add this to your containerService object
+  async updateItem(id, itemId, data) {
+    const payload = {
+      ...data,
+      quantityOrdered: parseFloat(data.quantityOrdered),
+      landedCost: parseFloat(data.landedCost),
+      priceKsh: parseFloat(data.priceKsh || 0),
+      costKsh: parseFloat(data.costKsh || 0),
+      priceUsd: parseFloat(data.priceUsd || 0),
+      sph: data.sph !== "" ? parseFloat(data.sph) : null,
+      cyl: data.cyl !== "" ? parseFloat(data.cyl) : null,
+      axis: data.axis !== "" ? parseInt(data.axis) : null,
+      nearAdd: data.nearAdd !== "" ? parseFloat(data.nearAdd) : null,
+      wholesalePrice: data.wholesalePrice ? parseFloat(data.wholesalePrice) : null,
+    };
+    return (await ContainerAPI.updateItem(id, itemId, payload)).data;
+  },
+
   async bulkAddItems(id, items) {
     return (await ContainerAPI.bulkAddItems(id, items)).data;
   },
