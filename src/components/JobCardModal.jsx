@@ -259,7 +259,7 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
                     className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
                   >
                     <option value="">-- Select Right Lens --</option>
-                    {lensOptions.map(l => <option key={l.id} value={l.name}>{l.name} (CYL:{l.cyl}, SPH:{l.sph}, AXIS:{l.axis}) (Ksh {l.priceKsh})</option>)}
+                    {lensOptions.map(l => <option key={l.id} value={l.name}>{l.name} (SPH:{l.sph}, CYL:{l.cyl}, AXIS:{l.axis}) (Ksh {l.priceKsh})</option>)}
                   </select>
                 </div>
 
@@ -281,7 +281,8 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
                     className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
                   >
                     <option value="">-- Select Left Lens --</option>
-                    {lensOptions.map(l => <option key={l.id} value={l.name}>{l.name} (Ksh {l.priceKsh})</option>)}
+                    {lensOptions.map(l => <option key={l.id} value={l.name}>{l.name} (SPH:{l.sph}, CYL:{l.cyl}, AXIS:{l.axis}) (Ksh {l.priceKsh})</option>)}
+                    {/* {lensOptions.map(l => <option key={l.id} value={l.name}>{l.name} (Ksh {l.priceKsh})</option>)} */}
                   </select>
                 </div>
               </div>
