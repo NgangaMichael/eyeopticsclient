@@ -236,75 +236,116 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
           </div>
 
           {/* Section 3: Detailed Inventory Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* LENS SELECTION (SPLIT) */}
-              <div className="space-y-4 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
-                <h4 className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Lens Configuration</h4>
-                
-                {/* Right Eye Lens */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Right Eye (OD) Lens</label>
-                  <select 
-                    name="rLens" 
-                    value={formData.rLens} 
-                    onChange={(e) => {
-                      const selected = lensOptions.find(l => l.name === e.target.value);
-                      setFormData(prev => ({
-                        ...prev, 
-                        rLens: e.target.value,
-                        rLensStockId: selected?.id || null,
-                        rLensPrice: selected?.priceKsh || 0
-                      }));
-                    }}
-                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
-                  >
-                    <option value="">-- Select Right Lens --</option>
-                    {lensOptions.map(l => <option key={l.id} value={l.name}>{l.name} (SPH:{l.sph}, CYL:{l.cyl}, AXIS:{l.axis}) (Ksh {l.priceKsh})</option>)}
-                  </select>
-                </div>
+          {/* LENS SELECTION (SPLIT WITH INLINE SEARCH) */}
+        {/* Section 3: Detailed Inventory Selection */}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+  {/* LENS SELECTION (SPLIT WITH INLINE SEARCH) */}
+  <div className="space-y-4 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
+    <h4 className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Lens Configuration</h4>
+    
+    {/* Right Eye Lens */}
+    <div className="space-y-1 relative">
+      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Right Eye (OD) Lens</label>
+      <input 
+        type="text"
+        placeholder="Type to search Right Lens..."
+        value={formData.rLens || ""}
+        onChange={(e) => {
+          const value = e.target.value;
+          setFormData(prev => ({ ...prev, rLens: value, rLensStockId: null, rLensPrice: 0 }));
+        }}
+        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
+      />
+      {formData.rLens && !formData.rLensStockId && (
+        <div className="absolute z-50 w-full max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl mt-1 shadow-xl divide-y divide-slate-50">
+          {lensOptions
+            .filter(l => l.name.toLowerCase().includes(formData.rLens.toLowerCase()))
+            .slice(0, 20)
+            .map(l => (
+              <button
+                key={l.id}
+                type="button"
+                className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 transition-colors"
+                onClick={() => {
+                  setFormData(prev => ({
+                    ...prev,
+                    rLens: l.name,
+                    rLensStockId: l.id,
+                    rLensPrice: l.priceKsh || 0
+                  }));
+                }}
+              >
+                {l.name} (SPH:{l.sph}, CYL:{l.cyl}, AXIS:{l.axis}) — <span className="font-bold text-indigo-600">Ksh {l.priceKsh}</span>
+              </button>
+            ))}
+          {lensOptions.filter(l => l.name.toLowerCase().includes(formData.rLens.toLowerCase())).length === 0 && (
+            <div className="px-4 py-2 text-xs text-slate-400 italic">No matches found</div>
+          )}
+        </div>
+      )}
+    </div>
 
-                {/* Left Eye Lens */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Left Eye (OS) Lens</label>
-                  <select 
-                    name="lLens" 
-                    value={formData.lLens} 
-                    onChange={(e) => {
-                      const selected = lensOptions.find(l => l.name === e.target.value);
-                      setFormData(prev => ({
-                        ...prev, 
-                        lLens: e.target.value,
-                        lLensStockId: selected?.id || null,
-                        lLensPrice: selected?.priceKsh || 0
-                      }));
-                    }}
-                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold"
-                  >
-                    <option value="">-- Select Left Lens --</option>
-                    {lensOptions.map(l => <option key={l.id} value={l.name}>{l.name} (SPH:{l.sph}, CYL:{l.cyl}, AXIS:{l.axis}) (Ksh {l.priceKsh})</option>)}
-                    {/* {lensOptions.map(l => <option key={l.id} value={l.name}>{l.name} (Ksh {l.priceKsh})</option>)} */}
-                  </select>
-                </div>
-              </div>
+    {/* Left Eye Lens */}
+    <div className="space-y-1 relative">
+      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Left Eye (OS) Lens</label>
+      <input 
+        type="text"
+        placeholder="Type to search Left Lens..."
+        value={formData.lLens || ""}
+        onChange={(e) => {
+          const value = e.target.value;
+          setFormData(prev => ({ ...prev, lLens: value, lLensStockId: null, lLensPrice: 0 }));
+        }}
+        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
+      />
+      {formData.lLens && !formData.lLensStockId && (
+        <div className="absolute z-50 w-full max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl mt-1 shadow-xl divide-y divide-slate-50">
+          {lensOptions
+            .filter(l => l.name.toLowerCase().includes(formData.lLens.toLowerCase()))
+            .slice(0, 20)
+            .map(l => (
+              <button
+                key={l.id}
+                type="button"
+                className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 transition-colors"
+                onClick={() => {
+                  setFormData(prev => ({
+                    ...prev,
+                    lLens: l.name,
+                    lLensStockId: l.id,
+                    lLensPrice: l.priceKsh || 0
+                  }));
+                }}
+              >
+                {l.name} (SPH:{l.sph}, CYL:{l.cyl}, AXIS:{l.axis}) — <span className="font-bold text-indigo-600">Ksh {l.priceKsh}</span>
+              </button>
+            ))}
+          {lensOptions.filter(l => l.name.toLowerCase().includes(formData.lLens.toLowerCase())).length === 0 && (
+            <div className="px-4 py-2 text-xs text-slate-400 italic">No matches found</div>
+          )}
+        </div>
+      )}
+    </div>
+  </div>
 
-              {/* FRAME SELECTION (REMAINS SAME) */}
-              <div className="space-y-4 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
-                <h4 className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Frame Configuration</h4>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Frame Selection</label>
-                  <select name="frame" value={formData.frame} onChange={handleChange}
-                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold">
-                    <option value="">-- Select Frame --</option>
-                    {frameOptions.map(f => <option key={f.id} value={f.name}>{f.name} ({f.code})</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Frame Qty</label>
-                  <input type="number" name="frameQty" value={formData.frameQty} onChange={handleChange}
-                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold" />
-                </div>
-              </div>
-            </div>
+  {/* FRAME SELECTION (RESTORED) */}
+  <div className="space-y-4 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
+    <h4 className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Frame Configuration</h4>
+    <div className="space-y-1">
+      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Frame Selection</label>
+      <select name="frame" value={formData.frame} onChange={handleChange}
+        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500">
+        <option value="">-- Select Frame --</option>
+        {frameOptions.map(f => <option key={f.id} value={f.name}>{f.name} ({f.code})</option>)}
+      </select>
+    </div>
+    <div className="space-y-1">
+      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Frame Qty</label>
+      <input type="number" name="frameQty" value={formData.frameQty} onChange={handleChange}
+        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
+    </div>
+  </div>
+</div>
 
           {/* Section 4: Other Measurements */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

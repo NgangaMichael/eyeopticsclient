@@ -35,12 +35,18 @@ export const saleService = {
   },
 
   // Add this inside your saleService object
+  // Update this inside your saleService object in saleService.js
   async updateSale(id, updateData) {
     const payload = {
       etimsReceipt: updateData.etimsReceipt || null,
       etimsAmount: updateData.etimsAmount ? parseFloat(updateData.etimsAmount) : null,
+      // Add this line to pass down the discount value safely to your database backend
+      discount: updateData.discount !== undefined ? parseFloat(updateData.discount || 0) : undefined
     };
-    // Assuming SaleAPI has an .update(id, data) method
+    
+    // Clean up undefined fields so you don't accidentally send a raw 'undefined' value to the API
+    if (payload.discount === undefined) delete payload.discount;
+
     return (await SaleAPI.update(id, payload)).data;
   },
 

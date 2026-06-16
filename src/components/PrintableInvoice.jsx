@@ -42,14 +42,24 @@ const PrintableInvoice = React.forwardRef(({ sale }, ref) => {
         <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
           <h3 className="text-[10px] font-black text-indigo-600 uppercase mb-4 tracking-widest">Bill To:</h3>
           <p className="text-xl font-bold text-slate-900">
-            {sale.patient.firstName || sale.patient.lastName 
-              ? `${sale.patient.firstName || ''} ${sale.patient.lastName || ''}`.trim() 
-              : "Walk-in Customer"}
+            {sale.customer 
+              ? sale.customer.name 
+              : (sale.patient?.firstName || sale.patient?.lastName)
+                ? `${sale.patient?.firstName || ''} ${sale.patient?.lastName || ''}`.trim() 
+                : "Walk-in Customer"}
           </p>
           <div className="mt-2 space-y-1 text-sm text-slate-600 font-medium">
-            <p className="flex items-center gap-2"><span>📞</span> {sale.patient?.phone || 'N/A'}</p>
-            {sale.patient?.email && <p className="flex items-center gap-2"><span>✉️</span> {sale.patient?.email}</p>}
-            <p className="flex items-center gap-2"><span>📍</span> {sale.patient?.address || 'Nairobi, Kenya'}</p>
+            <p className="flex items-center gap-2">
+              <span>📞</span> {sale.customer?.phone || sale.patient?.phone || 'N/A'}
+            </p>
+            {(sale.customer?.email || sale.patient?.email) && (
+              <p className="flex items-center gap-2">
+                <span>✉️</span> {sale.customer?.email || sale.patient?.email}
+              </p>
+            )}
+            <p className="flex items-center gap-2">
+              <span>📍</span> {sale.customer?.address || sale.patient?.address || 'Nairobi, Kenya'}
+            </p>
           </div>
         </div>
         

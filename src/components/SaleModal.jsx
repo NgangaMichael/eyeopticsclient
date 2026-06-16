@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Package, Receipt, BadgeCheck, Save, Layers, AlertCircle } from 'lucide-react';
+import { X, Package, Receipt, BadgeCheck, Save, Layers, AlertCircle, Tag } from 'lucide-react';
 
 export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate, onBulkUpdate }) {
   const [formData, setFormData] = useState({
     etimsReceipt: '',
-    etimsAmount: ''
+    etimsAmount: '',
+    discount: '0' // Added discount state field
   });
 
   useEffect(() => {
@@ -16,11 +17,13 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
         setFormData({
           etimsReceipt: allSameReceipt ? (initialData[0].etimsReceipt || '') : '',
           etimsAmount: allSameAmount ? (initialData[0].etimsAmount || '') : '',
+          discount: '0', // Defaults bulk discount adjustments out to prevent accidents
         });
       } else {
         setFormData({
           etimsReceipt: initialData.etimsReceipt || '',
-          etimsAmount: initialData.etimsAmount || initialData.total || ''
+          etimsAmount: initialData.etimsAmount || initialData.total || '',
+          discount: initialData.discount?.toString() || '0' // Populate current individual discount
         });
       }
     }
@@ -37,16 +40,29 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Formatting numbers perfectly for submission payload
+    const payload = {
+      etimsReceipt: formData.etimsReceipt.trim() || null,
+      etimsAmount: formData.etimsAmount ? Number(formData.etimsAmount) : null,
+    };
+
     if (isBulkMode) {
       const ids = bulkSales.map(s => s.id);
-      onBulkUpdate(ids, formData);
+      onBulkUpdate(ids, payload);
     } else {
-      onUpdate(initialData.id, formData);
+      payload.discount = Number(formData.discount) || 0; // Append edited discount parameter
+      onUpdate(initialData.id, payload);
     }
   };
 
   // For single sale display in view/edit mode
   const singleSale = !isBulkMode ? initialData : null;
+
+  // Visual helper calculations for single mode summaries
+  const calculatedGrossTotal = singleSale 
+    ? (singleSale.saleitem?.reduce((acc, curr) => acc + (curr.quantity * curr.price), 0) || Number(singleSale.total))
+    : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -59,7 +75,7 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
               {isBulkMode
                 ? `Bulk eTIMS Update`
                 : isEditMode
-                  ? `Update eTIMS Details`
+                  ? `Update Details & eTIMS`
                   : `Invoice #INV-${singleSale.id.toString().padStart(4, '0')}`
               }
             </h3>
@@ -88,6 +104,27 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
                 <p className="text-sm text-amber-800">
                   The eTIMS details below will <span className="font-bold">overwrite</span> any existing eTIMS data on all {bulkSales.length} selected invoices.
                 </p>
+              </div>
+            )}
+
+            {/* --- EDITABLE DISCOUNT SECTION (Single Edit Mode Only) --- */}
+            {isEditMode && (
+              <div className="bg-amber-50/60 border border-amber-100 rounded-2xl p-4">
+                <div className="flex items-center gap-2 font-bold mb-3 text-sm text-amber-800">
+                  <Tag size={18} />
+                  <span>Invoice Pricing Adjustment</span>
+                </div>
+                <div className="space-y-1 max-w-xs">
+                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Discount Amount (KSH)</p>
+                  <input
+                    type="number"
+                    min="0"
+                    className="w-full px-3 py-2 bg-white border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-bold text-sm text-slate-700"
+                    placeholder="e.g. 500"
+                    value={formData.discount}
+                    onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                  />
+                </div>
               </div>
             )}
 
@@ -219,11 +256,31 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot className="bg-slate-50/80 font-bold">
-                      <tr>
-                        <td colSpan="3" className="px-4 py-3 text-right text-slate-500">Grand Total</td>
-                        <td className="px-4 py-3 text-right text-indigo-600 text-lg">
-                          {Number(singleSale.total).toLocaleString()} <span className="text-[10px]">KSH</span>
+                    <tfoot className="bg-slate-50/80 text-xs border-t border-slate-200">
+                      {/* Only render raw break-out details if a discount is dynamically configured or in progress */}
+                      {(isViewMode && Number(singleSale.discount) > 0) && (
+                        <>
+                          <tr className="text-slate-500">
+                            <td colSpan="3" className="px-4 pt-3 pb-1 text-right font-medium">Gross Subtotal</td>
+                            <td className="px-4 pt-3 pb-1 text-right font-bold text-slate-700">
+                              {calculatedGrossTotal.toLocaleString()} KSH
+                            </td>
+                          </tr>
+                          <tr className="text-rose-600">
+                            <td colSpan="3" className="px-4 py-1 text-right font-medium">Discount Applied</td>
+                            <td className="px-4 py-1 text-right font-bold">
+                              - {Number(singleSale.discount).toLocaleString()} KSH
+                            </td>
+                          </tr>
+                        </>
+                      )}
+                      <tr className="text-sm font-bold">
+                        <td colSpan="3" className="px-4 py-3 text-right text-slate-600 uppercase tracking-wider text-[10px]">Net Grand Total</td>
+                        <td className="px-4 py-3 text-right text-indigo-600 text-lg font-black">
+                          {isEditMode 
+                            ? (calculatedGrossTotal - (Number(formData.discount) || 0)).toLocaleString() 
+                            : Number(singleSale.total).toLocaleString()
+                          } <span className="text-[10px]">KSH</span>
                         </td>
                       </tr>
                     </tfoot>
@@ -246,11 +303,7 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
             {(isEditMode || isBulkMode) && (
               <button
                 type="submit"
-                className={`px-6 py-2 text-white rounded-xl font-bold flex items-center gap-2 shadow-lg transition-all
-                  ${isBulkMode
-                    ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
-                    : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
-                  }`}
+                className="px-6 py-2 text-white bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200 rounded-xl font-bold flex items-center gap-2 shadow-lg transition-all"
               >
                 {isBulkMode ? <Layers size={18} /> : <Save size={18} />}
                 {isBulkMode ? `Update ${bulkSales.length} Invoices` : 'Save Changes'}
