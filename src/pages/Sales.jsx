@@ -6,6 +6,8 @@ import { toast, ToastContainer } from "react-toastify";
 import { useReactToPrint } from 'react-to-print';
 import PrintableInvoice from '../components/PrintableInvoice';
 import ConsolidatedInvoice from '../components/ConsolidatedInvoice';
+import { FileSpreadsheet } from 'lucide-react';
+import { exportInvoiceToExcel } from '../utils/excelExport';
 
 export default function Sales() {
   const [sales, setSales] = useState([]);
@@ -386,6 +388,14 @@ export default function Sales() {
                         className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
                       >
                         <Eye size={18} />
+                      </button>
+                      {/* NEW EXPORT TO EXCEL BUTTON */}
+                      <button
+                        title="Export to Excel"
+                        onClick={() => exportInvoiceToExcel(sale)}
+                        className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                      >
+                        <FileSpreadsheet size={18} />
                       </button>
                       <button
                         title="Print Receipt"

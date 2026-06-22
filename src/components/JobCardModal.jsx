@@ -35,7 +35,7 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
     rLens: "", rLensStockId: null, rLensPrice: 0,
     lLens: "", lLensStockId: null, lLensPrice: 0,
     lensQty: 0.5, 
-    frame: "", 
+    frame: "", frameStockId: null, framePrice: 0,
     frameQty: 1,
     advance: 0, 
     jobDelDate: "", 
@@ -43,8 +43,6 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
     discount: 0, 
     consultation: 0,
     lensPrice: 0, 
-    framePrice: 0,
-    
   };
 
   const [formData, setFormData] = useState(initialState);
@@ -91,7 +89,6 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
     const cons = Number(formData.consultation || 0);
     const disc = Number(formData.discount || 0);
     
-    // Total = (Sum of both lenses + frames + consultation) - discount
     return (rp + lp + fp + cons) - disc;
   }, [formData.rLensPrice, formData.lLensPrice, formData.framePrice, formData.frameQty, formData.consultation, formData.discount]);
 
@@ -99,66 +96,49 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === "lenses") {
-      const selectedLens = lensOptions.find((l) => l.name === value);
-      setFormData((prev) => ({
-        ...prev, lenses: value,
-        lensStockId: selectedLens ? selectedLens.id : null,
-        lensPrice: selectedLens ? selectedLens.priceKsh : 0,
-      }));
-    } else if (name === "frame") {
-      const selectedFrame = frameOptions.find((f) => f.name === value);
-      setFormData((prev) => ({
-        ...prev, frame: value,
-        frameStockId: selectedFrame ? selectedFrame.id : null,
-        framePrice: selectedFrame ? selectedFrame.priceKsh : 0,
-      }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  try {
-    const submissionData = { 
-      ...formData, 
-      total: calculatedTotal,
-      balance: balance,
-      patientId: parseInt(formData.patientId), 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const submissionData = { 
+        ...formData, 
+        total: calculatedTotal,
+        balance: balance,
+        patientId: parseInt(formData.patientId), 
 
-      rLensQty: formData.rLens ? 0.5 : 0,
-      lLensQty: formData.lLens ? 0.5 : 0,
-      // Ensure specific lens prices are numbers
-      rLensPrice: Number(formData.rLensPrice),
-      lLensPrice: Number(formData.lLensPrice),
+        rLensQty: formData.rLens ? 0.5 : 0,
+        lLensQty: formData.lLens ? 0.5 : 0,
+        rLensPrice: Number(formData.rLensPrice),
+        lLensPrice: Number(formData.lLensPrice),
 
-      framePrice: Number(formData.framePrice),
-      consultation: Number(formData.consultation),
-      discount: Number(formData.discount),
-      advance: Number(formData.advance),
-      // IDs
-      rLensStockId: formData.rLensStockId ? parseInt(formData.rLensStockId) : null,
-      lLensStockId: formData.lLensStockId ? parseInt(formData.lLensStockId) : null,
-      frameStockId: formData.frameStockId ? parseInt(formData.frameStockId) : null,
-    };
+        framePrice: Number(formData.framePrice),
+        consultation: Number(formData.consultation),
+        discount: Number(formData.discount),
+        advance: Number(formData.advance),
+        
+        rLensStockId: formData.rLensStockId ? parseInt(formData.rLensStockId) : null,
+        lLensStockId: formData.lLensStockId ? parseInt(formData.lLensStockId) : null,
+        frameStockId: formData.frameStockId ? parseInt(formData.frameStockId) : null,
+      };
 
-    if (editingCard) {
-      await jobCardService.updateJobCard(editingCard.id, submissionData);
-      toast.success("Job Card updated!");
-    } else {
-      await jobCardService.createJobCard(submissionData);
-      toast.success("Job Card created!");
+      if (editingCard) {
+        await jobCardService.updateJobCard(editingCard.id, submissionData);
+        toast.success("Job Card updated!");
+      } else {
+        await jobCardService.createJobCard(submissionData);
+        toast.success("Job Card created!");
+      }
+      onJobCardAdded(); 
+      onClose();
+    } catch (error) {
+      toast.error("Operation failed.");
+    } finally {
+      setLoading(false);
     }
-    onJobCardAdded(); 
-    onClose();
-  } catch (error) {
-    toast.error("Operation failed.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   if (!isOpen) return null;
 
@@ -236,116 +216,145 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
           </div>
 
           {/* Section 3: Detailed Inventory Selection */}
-          {/* LENS SELECTION (SPLIT WITH INLINE SEARCH) */}
-        {/* Section 3: Detailed Inventory Selection */}
-<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-  {/* LENS SELECTION (SPLIT WITH INLINE SEARCH) */}
-  <div className="space-y-4 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
-    <h4 className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Lens Configuration</h4>
-    
-    {/* Right Eye Lens */}
-    <div className="space-y-1 relative">
-      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Right Eye (OD) Lens</label>
-      <input 
-        type="text"
-        placeholder="Type to search Right Lens..."
-        value={formData.rLens || ""}
-        onChange={(e) => {
-          const value = e.target.value;
-          setFormData(prev => ({ ...prev, rLens: value, rLensStockId: null, rLensPrice: 0 }));
-        }}
-        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
-      />
-      {formData.rLens && !formData.rLensStockId && (
-        <div className="absolute z-50 w-full max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl mt-1 shadow-xl divide-y divide-slate-50">
-          {lensOptions
-            .filter(l => l.name.toLowerCase().includes(formData.rLens.toLowerCase()))
-            .slice(0, 20)
-            .map(l => (
-              <button
-                key={l.id}
-                type="button"
-                className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 transition-colors"
-                onClick={() => {
-                  setFormData(prev => ({
-                    ...prev,
-                    rLens: l.name,
-                    rLensStockId: l.id,
-                    rLensPrice: l.priceKsh || 0
-                  }));
-                }}
-              >
-                {l.name} (SPH:{l.sph}, CYL:{l.cyl}, AXIS:{l.axis}) — <span className="font-bold text-indigo-600">Ksh {l.priceKsh}</span>
-              </button>
-            ))}
-          {lensOptions.filter(l => l.name.toLowerCase().includes(formData.rLens.toLowerCase())).length === 0 && (
-            <div className="px-4 py-2 text-xs text-slate-400 italic">No matches found</div>
-          )}
-        </div>
-      )}
-    </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* LENS SELECTION */}
+            <div className="space-y-4 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
+              <h4 className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Lens Configuration</h4>
+              
+              {/* Right Eye Lens */}
+              <div className="space-y-1 relative">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Right Eye (OD) Lens</label>
+                <input 
+                  type="text"
+                  placeholder="Type to search Right Lens..."
+                  value={formData.rLens || ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFormData(prev => ({ ...prev, rLens: value, rLensStockId: null, rLensPrice: 0 }));
+                  }}
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+                {formData.rLens && !formData.rLensStockId && (
+                  <div className="absolute z-50 w-full max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl mt-1 shadow-xl divide-y divide-slate-50">
+                    {lensOptions
+                      .filter(l => l.name.toLowerCase().includes(formData.rLens.toLowerCase()))
+                      .map(l => (
+                        <button
+                          key={l.id}
+                          type="button"
+                          className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 transition-colors"
+                          onClick={() => {
+                            setFormData(prev => ({
+                              ...prev,
+                              rLens: l.name,
+                              rLensStockId: l.id,
+                              rLensPrice: l.priceKsh || 0
+                            }));
+                          }}
+                        >
+                          {l.name} (SPH:{l.sph}, CYL:{l.cyl}, AXIS:{l.axis}) — <span className="font-bold text-indigo-600">Ksh {l.priceKsh}</span>
+                        </button>
+                      ))}
+                    {lensOptions.filter(l => l.name.toLowerCase().includes(formData.rLens.toLowerCase())).length === 0 && (
+                      <div className="px-4 py-2 text-xs text-slate-400 italic">No matches found</div>
+                    )}
+                  </div>
+                )}
+              </div>
 
-    {/* Left Eye Lens */}
-    <div className="space-y-1 relative">
-      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Left Eye (OS) Lens</label>
-      <input 
-        type="text"
-        placeholder="Type to search Left Lens..."
-        value={formData.lLens || ""}
-        onChange={(e) => {
-          const value = e.target.value;
-          setFormData(prev => ({ ...prev, lLens: value, lLensStockId: null, lLensPrice: 0 }));
-        }}
-        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
-      />
-      {formData.lLens && !formData.lLensStockId && (
-        <div className="absolute z-50 w-full max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl mt-1 shadow-xl divide-y divide-slate-50">
-          {lensOptions
-            .filter(l => l.name.toLowerCase().includes(formData.lLens.toLowerCase()))
-            .slice(0, 20)
-            .map(l => (
-              <button
-                key={l.id}
-                type="button"
-                className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 transition-colors"
-                onClick={() => {
-                  setFormData(prev => ({
-                    ...prev,
-                    lLens: l.name,
-                    lLensStockId: l.id,
-                    lLensPrice: l.priceKsh || 0
-                  }));
-                }}
-              >
-                {l.name} (SPH:{l.sph}, CYL:{l.cyl}, AXIS:{l.axis}) — <span className="font-bold text-indigo-600">Ksh {l.priceKsh}</span>
-              </button>
-            ))}
-          {lensOptions.filter(l => l.name.toLowerCase().includes(formData.lLens.toLowerCase())).length === 0 && (
-            <div className="px-4 py-2 text-xs text-slate-400 italic">No matches found</div>
-          )}
-        </div>
-      )}
-    </div>
-  </div>
+              {/* Left Eye Lens */}
+              <div className="space-y-1 relative">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Left Eye (OS) Lens</label>
+                <input 
+                  type="text"
+                  placeholder="Type to search Left Lens..."
+                  value={formData.lLens || ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFormData(prev => ({ ...prev, lLens: value, lLensStockId: null, lLensPrice: 0 }));
+                  }}
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+                {formData.lLens && !formData.lLensStockId && (
+                  <div className="absolute z-50 w-full max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl mt-1 shadow-xl divide-y divide-slate-50">
+                    {lensOptions
+                      .filter(l => l.name.toLowerCase().includes(formData.lLens.toLowerCase()))
+                      .map(l => (
+                        <button
+                          key={l.id}
+                          type="button"
+                          className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 transition-colors"
+                          onClick={() => {
+                            setFormData(prev => ({
+                              ...prev,
+                              lLens: l.name,
+                              lLensStockId: l.id,
+                              lLensPrice: l.priceKsh || 0
+                            }));
+                          }}
+                        >
+                          {l.name} (SPH:{l.sph}, CYL:{l.cyl}, AXIS:{l.axis}) — <span className="font-bold text-indigo-600">Ksh {l.priceKsh}</span>
+                        </button>
+                      ))}
+                    {lensOptions.filter(l => l.name.toLowerCase().includes(formData.lLens.toLowerCase())).length === 0 && (
+                      <div className="px-4 py-2 text-xs text-slate-400 italic">No matches found</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
 
-  {/* FRAME SELECTION (RESTORED) */}
-  <div className="space-y-4 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
-    <h4 className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Frame Configuration</h4>
-    <div className="space-y-1">
-      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Frame Selection</label>
-      <select name="frame" value={formData.frame} onChange={handleChange}
-        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500">
-        <option value="">-- Select Frame --</option>
-        {frameOptions.map(f => <option key={f.id} value={f.name}>{f.name} ({f.code})</option>)}
-      </select>
-    </div>
-    <div className="space-y-1">
-      <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Frame Qty</label>
-      <input type="number" name="frameQty" value={formData.frameQty} onChange={handleChange}
-        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
-    </div>
-  </div>
-</div>
+            {/* FRAME SELECTION WITH INLINE SEARCH */}
+            <div className="space-y-4 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
+              <h4 className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Frame Configuration</h4>
+              
+              <div className="space-y-1 relative">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Frame Selection</label>
+                <input 
+                  type="text"
+                  placeholder="Type to search Frames..."
+                  value={formData.frame || ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFormData(prev => ({ ...prev, frame: value, frameStockId: null, framePrice: 0 }));
+                  }}
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500 outline-none"
+                />
+                {formData.frame && !formData.frameStockId && (
+                  <div className="absolute z-50 w-full max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl mt-1 shadow-xl divide-y divide-slate-50">
+                    {frameOptions
+                      .filter(f => f.name.toLowerCase().includes(formData.frame.toLowerCase()))
+                      .map(f => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-emerald-50 transition-colors"
+                          onClick={() => {
+                            setFormData(prev => ({
+                              ...prev,
+                              frame: f.name,
+                              frameStockId: f.id,
+                              framePrice: f.priceKsh || 0
+                            }));
+                          }}
+                        >
+                          {f.name} ({f.code || 'No Code'}) — <span className="font-bold text-emerald-600">Ksh {f.priceKsh}</span>
+                        </button>
+                      ))}
+                    {frameOptions.filter(f => f.name.toLowerCase().includes(formData.frame.toLowerCase())).length === 0 && (
+                      <div className="px-4 py-2 text-xs text-slate-400 italic">No matches found</div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Frame Qty</label>
+                <input type="number" name="frameQty" value={formData.frameQty} onChange={handleChange}
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
+              </div>
+            </div>
+          </div>
 
           {/* Section 4: Other Measurements */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -385,116 +394,103 @@ const JobCardModal = ({ isOpen, onClose, onJobCardAdded, initialPatientId, editi
           </div>
 
           {/* Section 6: Detailed Financial Summary & Breakdown */}
-            <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                
-                {/* Left Side: Line Item Breakdown */}
-                {/* Section 6: Revised Invoice Breakdown */}
-                  <div className="space-y-3">
-                    {/* Right Lens */}
-                    {formData.rLens && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-slate-400">Right Lens ({formData.rLens})</span>
-                        <span className="font-mono font-bold">Ksh {Number(formData.rLensPrice).toLocaleString()}</span>
-                      </div>
-                    )}
-
-                    {/* Left Lens */}
-                    {formData.lLens && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-slate-400">Left Lens ({formData.lLens})</span>
-                        <span className="font-mono font-bold">Ksh {Number(formData.lLensPrice).toLocaleString()}</span>
-                      </div>
-                    )}
-
-                    {/* Frame Calculation */}
-                    {formData.frame && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-slate-400">Frame ({formData.frameQty} units)</span>
-                        <span className="font-mono font-bold">Ksh {(Number(formData.framePrice) * Number(formData.frameQty)).toLocaleString()}</span>
-                      </div>
-                    )}
-
-                    {/* Consultation */}
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-400">Consultation Fee</span>
-                      <span className="font-mono font-bold">Ksh {Number(formData.consultation).toLocaleString()}</span>
-                    </div>
-
-                    {/* Discount */}
-                    {Number(formData.discount) > 0 && (
-                      <div className="flex justify-between items-center text-sm text-rose-400">
-                        <span>Discount</span>
-                        <span className="font-mono font-bold">- Ksh {Number(formData.discount).toLocaleString()}</span>
-                      </div>
-                    )}
+          <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              
+              {/* Left Side: Line Item Breakdown */}
+              <div className="space-y-3">
+                {/* Right Lens */}
+                {formData.rLens && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-400">Right Lens ({formData.rLens})</span>
+                    <span className="font-mono font-bold">Ksh {Number(formData.rLensPrice).toLocaleString()}</span>
                   </div>
+                )}
 
-                {/* Right Side: Final Totals & Actions */}
-                <div className="flex flex-col justify-between space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Total Payable</p>
-                      <p className="text-4xl font-black text-white tracking-tighter">
-                        <span className="text-lg font-normal text-slate-500 mr-1">Ksh</span>
-                        {calculatedTotal.toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="border-l border-slate-800 pl-4">
-                      <p className="text-[10px] font-bold text-rose-500 uppercase mb-1">Balance Due</p>
-                      <p className="text-4xl font-black text-rose-500 tracking-tighter">
-                        <span className="text-lg font-normal text-rose-800 mr-1">Ksh</span>
-                        {balance.toLocaleString()}
-                      </p>
-                    </div>
+                {/* Left Lens */}
+                {formData.lLens && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-400">Left Lens ({formData.lLens})</span>
+                    <span className="font-mono font-bold">Ksh {Number(formData.lLensPrice).toLocaleString()}</span>
                   </div>
+                )}
 
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase">
-                      <label>Promise Date:</label>
-                      <input 
-                        type="date" 
-                        name="jobDelDate" 
-                        value={formData.jobDelDate} 
-                        onChange={handleChange}
-                        className="bg-transparent border-b border-slate-700 text-indigo-400 focus:outline-none focus:border-indigo-500 pb-1"
-                      />
-                    </div>
-                    
-                    <div className="flex gap-3">
-                      <button 
-                        type="button" 
-                        onClick={onClose} 
-                        className="flex-1 py-3 rounded-2xl text-sm font-bold text-slate-400 hover:bg-slate-800 transition-all border border-slate-800"
-                      >
-                        Cancel
-                      </button>
-                      <button 
-                        type="submit" 
-                        disabled={loading}
-                        className={`flex-[2] py-3 rounded-2xl text-sm font-black text-white shadow-xl flex items-center justify-center gap-2 transition-all ${
-                          editingCard ? "bg-amber-500 hover:bg-amber-600 shadow-amber-900/20" : "bg-indigo-500 hover:bg-indigo-600 shadow-indigo-900/20"
-                        }`}
-                      >
-                        {loading ? "Processing..." : <><Save size={18}/> {editingCard ? "Update Record" : "Confirm & Save"}</>}
-                      </button>
-                    </div>
+                {/* Frame Calculation */}
+                {formData.frame && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-400">Frame ({formData.frameQty} units)</span>
+                    <span className="font-mono font-bold">Ksh {(Number(formData.framePrice) * Number(formData.frameQty)).toLocaleString()}</span>
+                  </div>
+                )}
+
+                {/* Consultation */}
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-400">Consultation Fee</span>
+                  <span className="font-mono font-bold">Ksh {Number(formData.consultation).toLocaleString()}</span>
+                </div>
+
+                {/* Discount */}
+                {Number(formData.discount) > 0 && (
+                  <div className="flex justify-between items-center text-sm text-rose-400">
+                    <span>Discount</span>
+                    <span className="font-mono font-bold">- Ksh {Number(formData.discount).toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Side: Final Totals & Actions */}
+              <div className="flex flex-col justify-between space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Total Payable</p>
+                    <p className="text-4xl font-black text-white tracking-tighter">
+                      <span className="text-lg font-normal text-slate-500 mr-1">Ksh</span>
+                      {calculatedTotal.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="border-l border-slate-800 pl-4">
+                    <p className="text-[10px] font-bold text-rose-500 uppercase mb-1">Balance Due</p>
+                    <p className="text-4xl font-black text-rose-500 tracking-tighter">
+                      <span className="text-lg font-normal text-rose-800 mr-1">Ksh</span>
+                      {balance.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase">
+                    <label>Promise Date:</label>
+                    <input 
+                      type="date" 
+                      name="jobDelDate" 
+                      value={formData.jobDelDate} 
+                      onChange={handleChange}
+                      className="bg-transparent border-b border-slate-700 text-indigo-400 focus:outline-none focus:border-indigo-500 pb-1"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <button 
+                      type="button" 
+                      onClick={onClose} 
+                      className="flex-1 py-3 rounded-2xl text-sm font-bold text-slate-400 hover:bg-slate-800 transition-all border border-slate-800"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit" 
+                      disabled={loading}
+                      className={`flex-[2] py-3 rounded-2xl text-sm font-black text-white shadow-xl flex items-center justify-center gap-2 transition-all ${
+                        editingCard ? "bg-amber-500 hover:bg-amber-600 shadow-amber-900/20" : "bg-indigo-500 hover:bg-indigo-600 shadow-indigo-900/20"
+                      }`}
+                    >
+                      {loading ? "Processing..." : <><Save size={18}/> {editingCard ? "Update Record" : "Confirm & Save"}</>}
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-          {/* Actions */}
-          {/* <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={onClose} className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 transition-all">
-              Cancel
-            </button>
-            <button type="submit" disabled={loading}
-              className={`px-8 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg flex items-center gap-2 transition-all ${
-                editingCard ? "bg-amber-500 hover:bg-amber-600" : "bg-indigo-600 hover:bg-indigo-700"
-              }`}>
-              {loading ? "Saving..." : <><Save size={18}/> {editingCard ? "Update Card" : "Save Job Card"}</>}
-            </button>
-          </div> */}
+          </div>
         </form>
       </div>
     </div>

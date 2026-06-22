@@ -15,7 +15,7 @@ export const saleService = {
       referenceNumber: saleData.referenceNumber,
       customerId: parseInt(saleData.customerId),
       discount: parseFloat(saleData.discount || 0), 
-      
+      miscellaneous: parseFloat(saleData.miscellaneous || 0),
       // Pass the new fields. Use null if they are empty strings 
       // to ensure the backend receives "nothing" for optional fields.
       etimsReceipt: saleData.etimsReceipt || null,
@@ -41,11 +41,13 @@ export const saleService = {
       etimsReceipt: updateData.etimsReceipt || null,
       etimsAmount: updateData.etimsAmount ? parseFloat(updateData.etimsAmount) : null,
       // Add this line to pass down the discount value safely to your database backend
-      discount: updateData.discount !== undefined ? parseFloat(updateData.discount || 0) : undefined
+      discount: updateData.discount !== undefined ? parseFloat(updateData.discount || 0) : undefined,
+      miscellaneous: updateData.miscellaneous !== undefined ? parseFloat(updateData.miscellaneous || 0) : undefined
     };
     
     // Clean up undefined fields so you don't accidentally send a raw 'undefined' value to the API
     if (payload.discount === undefined) delete payload.discount;
+    if (payload.miscellaneous === undefined) delete payload.miscellaneous;
 
     return (await SaleAPI.update(id, payload)).data;
   },

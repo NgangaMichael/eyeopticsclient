@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Plus, Search, Box, Trash2, ShoppingCart, User } from 'lucide-react';
+import { Plus, Search, Box, Trash2, ShoppingCart } from 'lucide-react';
 import { stockService } from "../api/services/stockService";
 import { saleService } from "../api/services/saleService";
 import { customerService } from "../api/services/customerService";
@@ -25,7 +25,7 @@ export default function Createsale() {
 
   useEffect(() => { 
     loadStocks();
-    loadCustomers(); // New fetch
+    loadCustomers();
   }, []);
 
   const loadCustomers = async () => {
@@ -37,8 +37,6 @@ export default function Createsale() {
     }
   };
 
-  useEffect(() => { loadStocks(); }, []);
-
   const loadStocks = async () => {
     try {
       const data = await stockService.getAllStocks();
@@ -47,20 +45,6 @@ export default function Createsale() {
       toast.error("Failed to load inventory data");
     }
   };
-
-  // Add item to cart logic
-  // const addToCart = (item) => {
-  //   const existingItem = cart.find(cartItem => cartItem.id === item.id);
-  //   if (existingItem) {
-  //     toast.info("Item already in cart. Adjust quantity on the right.");
-  //     return;
-  //   }
-  //   if (item.qty <= 0) {
-  //     toast.error("Item out of stock");
-  //     return;
-  //   }
-  //   setCart([...cart, { ...item, cartQty: 1, cartPrice: item.wholesalePrice }]);
-  // };
 
   const addToCart = (item) => {
     const existingItem = cart.find(cartItem => cartItem.id === item.id);
@@ -73,7 +57,6 @@ export default function Createsale() {
       return;
     }
 
-    // Check if the item is a lens to set initial quantity to 0.5
     const isLens = item.type?.toLowerCase() === 'lens';
     const initialQty = isLens ? 0.5 : 1;
 
@@ -84,21 +67,22 @@ export default function Createsale() {
     const isLens = type?.toLowerCase() === 'lens';
     const parsedQty = parseFloat(newQty) || 0;
     
-    // 1. Determine the increment step based on type
-    // If it's a frame, we force it to a whole number (Integer)
-    // If it's a lens, we allow the decimal provided
     let val = parsedQty;
-    
     if (!isLens) {
-      val = Math.round(parsedQty); // Force frames to 1, 2, 3...
+      val = Math.round(parsedQty);
     }
 
-    // 2. Keep the bounds between 0 and stock max
     const finalVal = Math.max(0, Math.min(val, maxQty));
     
     if (parsedQty > maxQty) toast.warning(`Only ${maxQty} units available`);
     
     setCart(cart.map(item => item.id === id ? { ...item, cartQty: finalVal } : item));
+  };
+
+  // New function to update the price of an item in the cart
+  const updateCartPrice = (id, newPrice) => {
+    const parsedPrice = parseFloat(newPrice) || 0;
+    setCart(cart.map(item => item.id === id ? { ...item, cartPrice: parsedPrice } : item));
   };
 
   const removeFromCart = (id) => {
@@ -141,20 +125,15 @@ export default function Createsale() {
     }
   };
 
-  // Filter Logic
   const filteredStocks = useMemo(() => {
     return stocks.filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             item.code.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesType = typeFilter === 'all' || item.type === typeFilter;
-
-      // SPH & CYL Filter Logic (matching your Stocks page)
       const matchesSph = sphSearch === '' || parseFloat(item.sph) === parseFloat(sphSearch);
       const matchesCyl = cylSearch === '' || parseFloat(item.cyl) === parseFloat(cylSearch);
-
-      const matchesIndex = indexSearch === '' || 
-      (item.index && item.index.toLowerCase().includes(indexSearch.toLowerCase()));
+      const matchesIndex = indexSearch === '' || (item.index && item.index.toLowerCase().includes(indexSearch.toLowerCase()));
 
       return matchesSearch && matchesType && matchesSph && matchesCyl && matchesIndex;
     });
@@ -169,7 +148,7 @@ export default function Createsale() {
     <div className="max-w-[1600px] mx-auto p-4 lg:p-6">
       <div className="flex flex-col lg:flex-row gap-6">
         
-        {/* LEFT SIDE: Inventory Browser (60% width) */}
+        {/* LEFT SIDE: Inventory Browser */}
         <div className="lg:w-3/5 flex flex-col h-[calc(100vh-120px)]">
           <header>
             <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Create Sale</h2>
@@ -177,63 +156,55 @@ export default function Createsale() {
           </header>
 
           {/* Filter Bar */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
-                <input
-                  type="text" placeholder="Search item..."
-                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                  value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-
-              {/* SPH Search */}
-              <div className="relative">
-                <input
-                  type="number" step="0.25" placeholder="0.00"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold"
-                  value={sphSearch}
-                  onChange={(e) => setSphSearch(e.target.value)}
-                />
-                <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-blue-500 uppercase">SPH</span>
-              </div>
-
-              {/* CYL Search */}
-              <div className="relative">
-                <input
-                  type="number" step="0.25" placeholder="0.00"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-bold"
-                  value={cylSearch}
-                  onChange={(e) => setCylSearch(e.target.value)}
-                />
-                <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-emerald-500 uppercase">CYL</span>
-              </div>
-
-              {/* Index Search */}
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="1.56"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 text-sm font-bold"
-                  value={indexSearch}
-                  onChange={(e) => setIndexSearch(e.target.value)}
-                />
-                <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-purple-500 uppercase">Index</span>
-              </div>
-
-              {/* Category */}
-              <div className="relative">
-                <Box className="absolute left-3 top-2.5 text-slate-400" size={18} />
-                <select
-                  value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm appearance-none"
-                >
-                  <option value="all">All Categories</option>
-                  {categories.map(type => <option key={type} value={type}>{type}</option>)}
-                </select>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+              <input
+                type="text" placeholder="Search item..."
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
+
+            <div className="relative">
+              <input
+                type="number" step="0.25" placeholder="0.00"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold"
+                value={sphSearch} onChange={(e) => setSphSearch(e.target.value)}
+              />
+              <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-blue-500 uppercase">SPH</span>
+            </div>
+
+            <div className="relative">
+              <input
+                type="number" step="0.25" placeholder="0.00"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-bold"
+                value={cylSearch} onChange={(e) => setCylSearch(e.target.value)}
+              />
+              <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-emerald-500 uppercase">CYL</span>
+            </div>
+
+            <div className="relative">
+              <input
+                type="text" placeholder="1.56"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 text-sm font-bold"
+                value={indexSearch} onChange={(e) => setIndexSearch(e.target.value)}
+              />
+              <span className="absolute -top-2 left-3 bg-white px-1 text-[10px] font-bold text-purple-500 uppercase">Index</span>
+            </div>
+
+            <div className="relative">
+              <Box className="absolute left-3 top-2.5 text-slate-400" size={18} />
+              <select
+                value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm appearance-none"
+              >
+                <option value="all">All Categories</option>
+                {categories.map(type => <option key={type} value={type}>{type}</option>)}
+              </select>
+            </div>
+          </div>
+
           {/* Items Table */}
           <div className="flex-grow bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
             <div className="overflow-auto custom-scrollbar">
@@ -252,23 +223,17 @@ export default function Createsale() {
                       <td className="px-6 py-4">
                         <div className="font-bold text-slate-800">{item.name}</div>
                         <div className="text-[10px] font-mono text-indigo-500">{item.code}</div>
-                        {/* Logic for Lens specific SPH and CYL */}
                         {item.type?.toLowerCase() === 'lens' && (item.sph !== null || item.cyl !== null) && (
-                          <div className="flex items-center gap-1 bg-slate-800 text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm">
-                            <span className="text-slate-400">SPH:</span> 
-                            <span>{item.sph > 0 ? `+${item.sph}` : item.sph}</span>
+                          <div className="flex items-center gap-1 bg-slate-800 text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm mt-1 w-max">
+                            <span className="text-slate-400">SPH:</span> <span>{item.sph > 0 ? `+${item.sph}` : item.sph}</span>
                             <span className="mx-1 text-slate-600">|</span>
-                            <span className="text-slate-400">CYL:</span> 
-                            <span>{item.cyl > 0 ? `+${item.cyl}` : item.cyl}</span>
+                            <span className="text-slate-400">CYL:</span> <span>{item.cyl > 0 ? `+${item.cyl}` : item.cyl}</span>
                             <span className="mx-1 text-slate-600">|</span>
-                            <span className="text-slate-400">AX:</span>
-                            <span>{item.axis}°</span>
+                            <span className="text-slate-400">AX:</span> <span>{item.axis}°</span>
                             <span className="mx-1 text-slate-600">|</span>
-                            <span className="text-slate-400">ADD:</span>
-                            <span>{item.nearAdd > 0 ? `+${item.nearAdd}` : item.nearAdd}</span>
+                            <span className="text-slate-400">ADD:</span> <span>{item.nearAdd > 0 ? `+${item.nearAdd}` : item.nearAdd}</span>
                             <span className="mx-1 text-slate-600">|</span>
-                            <span className="text-slate-400">INDEX:</span>
-                            <span>{item.index}</span>
+                            <span className="text-slate-400">INDEX:</span> <span>{item.index}</span>
                           </div>
                         )}
                       </td>
@@ -297,11 +262,11 @@ export default function Createsale() {
           </div>
         </div>
 
-        {/* RIGHT SIDE: Cart / Checkout (40% width) */}
+        {/* RIGHT SIDE: Cart / Checkout */}
         <div className="lg:w-2/5">
           <div className="bg-slate-900 rounded-3xl shadow-xl flex flex-col sticky top-6 h-[calc(100vh-120px)] border border-slate-800 overflow-hidden">
             
-            {/* 1. COMPACT Header: Customer & Ref on one line */}
+            {/* Header */}
             <div className="p-4 border-b border-slate-800 flex-none space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-white">
@@ -314,65 +279,53 @@ export default function Createsale() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                {/* Reference Number */}
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Reference</label>
                   <input 
-                    type="text"
-                    placeholder="REF-001"
+                    type="text" placeholder="REF-001"
                     className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:ring-1 focus:ring-indigo-500 text-xs font-mono placeholder:text-slate-600"
-                    value={referenceNumber}
-                    onChange={(e) => setReferenceNumber(e.target.value)}
+                    value={referenceNumber} onChange={(e) => setReferenceNumber(e.target.value)}
                   />
                 </div>
 
-                {/* Customer Select */}
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Customer</label>
                   <div className="relative">
                     <select 
                       className="w-full pl-2 pr-6 py-1.5 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:ring-1 focus:ring-indigo-500 appearance-none text-xs cursor-pointer"
-                      value={customerId}
-                      onChange={(e) => setCustomerId(e.target.value)}
+                      value={customerId} onChange={(e) => setCustomerId(e.target.value)}
                     >
                       <option value="">Select...</option>
-                      {customers.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
+                      {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                     <div className="absolute right-2 top-2 pointer-events-none text-slate-500">
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-3 border-t border-slate-800/50 pt-3">
+              <div className="grid grid-cols-2 gap-3 border-t border-slate-800/50 pt-3">
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold text-slate-500 uppercase ml-1 tracking-widest">eTIMS Receipt (Opt)</label>
                   <input 
-                    type="text"
-                    placeholder="CU-01-..."
+                    type="text" placeholder="CU-01-..."
                     className="w-full px-3 py-1.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white outline-none focus:ring-1 focus:ring-emerald-500 text-xs font-mono placeholder:text-slate-600"
-                    value={etimsReceipt}
-                    onChange={(e) => setEtimsReceipt(e.target.value)}
+                    value={etimsReceipt} onChange={(e) => setEtimsReceipt(e.target.value)}
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold text-slate-500 uppercase ml-1 tracking-widest">eTIMS Amount (Opt)</label>
                   <input 
-                    type="number"
-                    placeholder="0.00"
+                    type="number" placeholder="0.00"
                     className="w-full px-3 py-1.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white outline-none focus:ring-1 focus:ring-emerald-500 text-xs font-mono placeholder:text-slate-600"
-                    value={etimsAmount}
-                    onChange={(e) => setEtimsAmount(e.target.value)}
+                    value={etimsAmount} onChange={(e) => setEtimsAmount(e.target.value)}
                   />
                 </div>
               </div>
-              
-              </div>
             </div>
 
-            {/* 2. COMPACT Scrollable Cart Items */}
+            {/* Cart Items List */}
             <div className="flex-grow overflow-y-auto p-3 space-y-2 custom-scrollbar bg-slate-900/50">
               {cart.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full py-10 opacity-20">
@@ -381,38 +334,57 @@ export default function Createsale() {
                 </div>
               ) : (
                 cart.map(item => (
-                  <div key={item.id} className="flex items-center gap-3 bg-slate-800/30 p-2 rounded-xl border border-slate-700/30">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-white font-bold text-xs truncate leading-tight">{item.name}</h4>
-                      <p className="text-indigo-400 text-[9px] font-mono">{item.code}</p>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <div className="flex flex-col items-center">
-                        <input 
-                          type="number"
-                          step={item.type?.toLowerCase() === 'lens' ? "0.5" : "1"}
-                          value={item.cartQty}
-                          onChange={(e) => updateCartQty(item.id, e.target.value, item.qty, item.type)}
-                          className="w-11 bg-slate-900 border border-slate-700 rounded-lg py-0.5 text-white text-center text-[11px] outline-none"
-                        />
+                  <div key={item.id} className="flex flex-col gap-2 bg-slate-800/30 p-3 rounded-xl border border-slate-700/30">
+                    <div className="flex justify-between items-start">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-white font-bold text-xs truncate leading-tight">{item.name}</h4>
+                        <p className="text-indigo-400 text-[9px] font-mono">{item.code}</p>
                       </div>
-                      <div className="text-right min-w-[60px]">
-                        <p className="text-white font-bold text-[11px]">{(item.cartQty * item.cartPrice).toLocaleString()}</p>
-                      </div>
-                      <button onClick={() => removeFromCart(item.id)} className="text-slate-600 hover:text-rose-400 transition-colors">
+                      <button onClick={() => removeFromCart(item.id)} className="text-slate-600 hover:text-rose-400 transition-colors ml-2">
                         <Trash2 size={14} />
                       </button>
+                    </div>
+                    
+                    <div className="flex items-center justify-between gap-2 border-t border-slate-800/60 pt-2">
+                      <div className="flex items-center gap-3">
+                        {/* Qty Input Container */}
+                        <div className="flex flex-col">
+                          <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter mb-0.5">Qty</span>
+                          <input 
+                            type="number"
+                            step={item.type?.toLowerCase() === 'lens' ? "0.5" : "1"}
+                            value={item.cartQty}
+                            onChange={(e) => updateCartQty(item.id, e.target.value, item.qty, item.type)}
+                            className="w-12 bg-slate-900 border border-slate-700 rounded-lg py-0.5 text-white text-center text-[11px] outline-none"
+                          />
+                        </div>
+
+                        {/* Price Input Container */}
+                        <div className="flex flex-col">
+                          <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter mb-0.5">Price (KSH)</span>
+                          <input 
+                            type="number"
+                            value={item.cartPrice}
+                            onChange={(e) => updateCartPrice(item.id, e.target.value)}
+                            className="w-20 bg-slate-900 border border-slate-700 rounded-lg px-1.5 py-0.5 text-white text-right text-[11px] outline-none font-bold text-indigo-300"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Total calculated price for this item row */}
+                      <div className="text-right">
+                        <span className="text-[8px] font-bold text-slate-500 uppercase block tracking-tighter">Total</span>
+                        <p className="text-white font-black text-xs">{(item.cartQty * item.cartPrice).toLocaleString()}</p>
+                      </div>
                     </div>
                   </div>
                 ))
               )}
             </div>
 
-            {/* 3. CONDENSED Footer */}
+            {/* Footer */}
             <div className="p-4 bg-slate-800/80 border-t border-slate-700 flex-none">
               <div className="grid grid-cols-2 gap-4 items-center mb-3">
-                {/* Discount Mini-Input */}
                 <div className="flex items-center gap-2">
                   <span className="text-slate-400 font-bold uppercase text-[9px] tracking-tighter">Discount:</span>
                   <input 
@@ -423,7 +395,6 @@ export default function Createsale() {
                   />
                 </div>
 
-                {/* Total Price display */}
                 <div className="text-right">
                   <span className="block text-slate-500 text-[8px] font-bold uppercase">Final Total</span>
                   <span className="text-xl font-black text-white">

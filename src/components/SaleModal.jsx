@@ -5,25 +5,27 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
   const [formData, setFormData] = useState({
     etimsReceipt: '',
     etimsAmount: '',
-    discount: '0' // Added discount state field
+    discount: '0',
+    miscellaneous: '0' // Added miscellaneous state
   });
 
   useEffect(() => {
     if (initialData) {
-      // For bulk mode, initialData is an array — pre-fill only if all have the same value
       if (mode === 'bulk' && Array.isArray(initialData)) {
         const allSameReceipt = initialData.every(s => s.etimsReceipt === initialData[0].etimsReceipt);
         const allSameAmount = initialData.every(s => s.etimsAmount === initialData[0].etimsAmount);
         setFormData({
           etimsReceipt: allSameReceipt ? (initialData[0].etimsReceipt || '') : '',
           etimsAmount: allSameAmount ? (initialData[0].etimsAmount || '') : '',
-          discount: '0', // Defaults bulk discount adjustments out to prevent accidents
+          discount: '0',
+          miscellaneous: '0', // Defaults bulk adjustments out to prevent accidents
         });
       } else {
         setFormData({
           etimsReceipt: initialData.etimsReceipt || '',
           etimsAmount: initialData.etimsAmount || initialData.total || '',
-          discount: initialData.discount?.toString() || '0' // Populate current individual discount
+          discount: initialData.discount?.toString() || '0',
+          miscellaneous: initialData.miscellaneous?.toString() || '0' // Populate current miscellaneous charge
         });
       }
     }
@@ -35,13 +37,11 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
   const isEditMode = mode === 'edit';
   const isBulkMode = mode === 'bulk';
 
-  // The list of sales when in bulk mode
   const bulkSales = isBulkMode && Array.isArray(initialData) ? initialData : [];
 
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Formatting numbers perfectly for submission payload
     const payload = {
       etimsReceipt: formData.etimsReceipt.trim() || null,
       etimsAmount: formData.etimsAmount ? Number(formData.etimsAmount) : null,
@@ -51,15 +51,14 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
       const ids = bulkSales.map(s => s.id);
       onBulkUpdate(ids, payload);
     } else {
-      payload.discount = Number(formData.discount) || 0; // Append edited discount parameter
+      payload.discount = Number(formData.discount) || 0;
+      payload.miscellaneous = Number(formData.miscellaneous) || 0; // Append edited miscellaneous parameter
       onUpdate(initialData.id, payload);
     }
   };
 
-  // For single sale display in view/edit mode
   const singleSale = !isBulkMode ? initialData : null;
 
-  // Visual helper calculations for single mode summaries
   const calculatedGrossTotal = singleSale 
     ? (singleSale.saleitem?.reduce((acc, curr) => acc + (curr.quantity * curr.price), 0) || Number(singleSale.total))
     : 0;
@@ -75,7 +74,7 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
               {isBulkMode
                 ? `Bulk eTIMS Update`
                 : isEditMode
-                  ? `Update Details & eTIMS`
+                  ? `Update Details & Adjustments`
                   : `Invoice #INV-${singleSale.id.toString().padStart(4, '0')}`
               }
             </h3>
@@ -107,23 +106,36 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
               </div>
             )}
 
-            {/* --- EDITABLE DISCOUNT SECTION (Single Edit Mode Only) --- */}
+            {/* --- EDITABLE ADJUSTMENTS SECTION (Single Edit Mode Only) --- */}
             {isEditMode && (
               <div className="bg-amber-50/60 border border-amber-100 rounded-2xl p-4">
                 <div className="flex items-center gap-2 font-bold mb-3 text-sm text-amber-800">
                   <Tag size={18} />
-                  <span>Invoice Pricing Adjustment</span>
+                  <span>Invoice Pricing Adjustments</span>
                 </div>
-                <div className="space-y-1 max-w-xs">
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Discount Amount (KSH)</p>
-                  <input
-                    type="number"
-                    min="0"
-                    className="w-full px-3 py-2 bg-white border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-bold text-sm text-slate-700"
-                    placeholder="e.g. 500"
-                    value={formData.discount}
-                    onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Discount Amount (KSH)</p>
+                    <input
+                      type="number"
+                      min="0"
+                      className="w-full px-3 py-2 bg-white border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-bold text-sm text-slate-700"
+                      placeholder="e.g. 500"
+                      value={formData.discount}
+                      onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Miscellaneous Charges (KSH)</p>
+                    <input
+                      type="number"
+                      min="0"
+                      className="w-full px-3 py-2 bg-white border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-bold text-sm text-slate-700"
+                      placeholder="e.g. 250"
+                      value={formData.miscellaneous}
+                      onChange={(e) => setFormData({ ...formData, miscellaneous: e.target.value })}
+                    />
+                  </div>
                 </div>
               </div>
             )}
@@ -257,8 +269,8 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
                       ))}
                     </tbody>
                     <tfoot className="bg-slate-50/80 text-xs border-t border-slate-200">
-                      {/* Only render raw break-out details if a discount is dynamically configured or in progress */}
-                      {(isViewMode && Number(singleSale.discount) > 0) && (
+                      {/* View Mode Summary Breakdown */}
+                      {isViewMode && (Number(singleSale.discount) > 0 || Number(singleSale.miscellaneous) > 0) && (
                         <>
                           <tr className="text-slate-500">
                             <td colSpan="3" className="px-4 pt-3 pb-1 text-right font-medium">Gross Subtotal</td>
@@ -266,19 +278,31 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
                               {calculatedGrossTotal.toLocaleString()} KSH
                             </td>
                           </tr>
-                          <tr className="text-rose-600">
-                            <td colSpan="3" className="px-4 py-1 text-right font-medium">Discount Applied</td>
-                            <td className="px-4 py-1 text-right font-bold">
-                              - {Number(singleSale.discount).toLocaleString()} KSH
-                            </td>
-                          </tr>
+                          {Number(singleSale.discount) > 0 && (
+                            <tr className="text-rose-600">
+                              <td colSpan="3" className="px-4 py-1 text-right font-medium">Discount Applied</td>
+                              <td className="px-4 py-1 text-right font-bold">
+                                - {Number(singleSale.discount).toLocaleString()} KSH
+                              </td>
+                            </tr>
+                          )}
+                          {Number(singleSale.miscellaneous) > 0 && (
+                            <tr className="text-blue-600">
+                              <td colSpan="3" className="px-4 py-1 text-right font-medium">Miscellaneous Charges</td>
+                              <td className="px-4 py-1 text-right font-bold">
+                                + {Number(singleSale.miscellaneous).toLocaleString()} KSH
+                              </td>
+                            </tr>
+                          )}
                         </>
                       )}
+                      
+                      {/* Active Calculation Row */}
                       <tr className="text-sm font-bold">
                         <td colSpan="3" className="px-4 py-3 text-right text-slate-600 uppercase tracking-wider text-[10px]">Net Grand Total</td>
                         <td className="px-4 py-3 text-right text-indigo-600 text-lg font-black">
                           {isEditMode 
-                            ? (calculatedGrossTotal - (Number(formData.discount) || 0)).toLocaleString() 
+                            ? (calculatedGrossTotal - (Number(formData.discount) || 0) - (Number(formData.miscellaneous) || 0)).toLocaleString() 
                             : Number(singleSale.total).toLocaleString()
                           } <span className="text-[10px]">KSH</span>
                         </td>
