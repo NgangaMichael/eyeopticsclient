@@ -148,14 +148,20 @@ export default function Sales() {
   };
 
   // Bulk update: update all selected sales with the same eTIMS data
-  const handleBulkUpdate = async (ids, updatedData) => {
+  // Replace this function inside your Sales page component:
+  const handleBulkUpdate = async (bulkPayloads) => {
     try {
-      await Promise.all(ids.map(id => saleService.updateSale(id, updatedData)));
-      toast.success(`${ids.length} invoice${ids.length > 1 ? 's' : ''} updated with eTIMS details`);
+      // 1. Call your new bulk update service function instead of looping single updates
+      await saleService.bulkUpdateSales(bulkPayloads);
+      
+      toast.success(`${bulkPayloads.length} invoice${bulkPayloads.length > 1 ? 's' : ''} updated successfully with eTIMS & adjustments`);
+      
+      // 2. Refresh UI data cleanly
       clearSelection();
       loadSales();
       closeModal();
     } catch (err) {
+      console.error("Bulk update endpoint error details:", err);
       toast.error("Bulk update failed. Some invoices may not have been updated.");
     }
   };

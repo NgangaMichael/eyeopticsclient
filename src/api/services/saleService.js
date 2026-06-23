@@ -52,6 +52,10 @@ export const saleService = {
     return (await SaleAPI.update(id, payload)).data;
   },
 
+  async bulkUpdateSales(bulkPayloads) {
+    return (await SaleAPI.bulkUpdate(bulkPayloads)).data;
+  },
+
   async deleteSale(id) {
     return (await SaleAPI.delete(id)).data;
   }

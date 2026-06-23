@@ -1,37 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X, Package, Receipt, BadgeCheck, Save, Layers, AlertCircle, Tag } from 'lucide-react';
+import { X, Package, Receipt, BadgeCheck, Save, Layers, AlertCircle, Tag, Percent } from 'lucide-react';
 
 export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate, onBulkUpdate }) {
   const [formData, setFormData] = useState({
     etimsReceipt: '',
     etimsAmount: '',
     discount: '0',
-    miscellaneous: '0' // Added miscellaneous state
+    miscellaneous: '0',
+    bulkDiscountPercent: '0' 
   });
-
-  useEffect(() => {
-    if (initialData) {
-      if (mode === 'bulk' && Array.isArray(initialData)) {
-        const allSameReceipt = initialData.every(s => s.etimsReceipt === initialData[0].etimsReceipt);
-        const allSameAmount = initialData.every(s => s.etimsAmount === initialData[0].etimsAmount);
-        setFormData({
-          etimsReceipt: allSameReceipt ? (initialData[0].etimsReceipt || '') : '',
-          etimsAmount: allSameAmount ? (initialData[0].etimsAmount || '') : '',
-          discount: '0',
-          miscellaneous: '0', // Defaults bulk adjustments out to prevent accidents
-        });
-      } else {
-        setFormData({
-          etimsReceipt: initialData.etimsReceipt || '',
-          etimsAmount: initialData.etimsAmount || initialData.total || '',
-          discount: initialData.discount?.toString() || '0',
-          miscellaneous: initialData.miscellaneous?.toString() || '0' // Populate current miscellaneous charge
-        });
-      }
-    }
-  }, [initialData, mode]);
-
-  if (!isOpen || !initialData) return null;
 
   const isViewMode = mode === 'view';
   const isEditMode = mode === 'edit';
@@ -39,20 +16,60 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
 
   const bulkSales = isBulkMode && Array.isArray(initialData) ? initialData : [];
 
+  useEffect(() => {
+    if (initialData) {
+      if (mode === 'bulk' && Array.isArray(initialData)) {
+        const allSameReceipt = initialData.every(s => s.etimsReceipt === initialData[0].etimsReceipt);
+        const totalInvoicesSum = initialData.reduce((acc, curr) => acc + (Number(curr.total) || 0), 0);
+
+        setFormData({
+          etimsReceipt: allSameReceipt ? (initialData[0].etimsReceipt || '') : '',
+          etimsAmount: totalInvoicesSum.toString(), 
+          discount: '0',
+          miscellaneous: '0',
+          bulkDiscountPercent: '0' 
+        });
+      } else {
+        setFormData({
+          etimsReceipt: initialData.etimsReceipt || '',
+          etimsAmount: initialData.etimsAmount || initialData.total || '',
+          discount: initialData.discount?.toString() || '0',
+          miscellaneous: initialData.miscellaneous?.toString() || '0',
+          bulkDiscountPercent: '0'
+        });
+      }
+    }
+  }, [initialData, mode]);
+
+  if (!isOpen || !initialData) return null;
+
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    const payload = {
-      etimsReceipt: formData.etimsReceipt.trim() || null,
-      etimsAmount: formData.etimsAmount ? Number(formData.etimsAmount) : null,
-    };
-
     if (isBulkMode) {
-      const ids = bulkSales.map(s => s.id);
-      onBulkUpdate(ids, payload);
+      const percentage = Number(formData.bulkDiscountPercent) || 0;
+
+      // Translate the shared percentage into individual cash values per invoice
+      const bulkPayloads = bulkSales.map(sale => {
+        const currentInvoiceTotal = Number(sale.total) || 0;
+        const calculatedKshDiscount = Math.round((percentage / 100) * currentInvoiceTotal);
+
+        return {
+          id: sale.id,
+          etimsReceipt: formData.etimsReceipt.trim() || null,
+          etimsAmount: formData.etimsAmount ? Number(formData.etimsAmount) : null,
+          discount: calculatedKshDiscount // Passes computed currency deduction
+        };
+      });
+
+      onBulkUpdate(bulkPayloads);
     } else {
-      payload.discount = Number(formData.discount) || 0;
-      payload.miscellaneous = Number(formData.miscellaneous) || 0; // Append edited miscellaneous parameter
+      const payload = {
+        etimsReceipt: formData.etimsReceipt.trim() || null,
+        etimsAmount: formData.etimsAmount ? Number(formData.etimsAmount) : null,
+        discount: Number(formData.discount) || 0,
+        miscellaneous: Number(formData.miscellaneous) || 0
+      };
       onUpdate(initialData.id, payload);
     }
   };
@@ -71,24 +88,15 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
         <div className={`px-6 py-4 border-b border-slate-100 flex justify-between items-center ${isBulkMode ? 'bg-indigo-600' : 'bg-slate-50/50'}`}>
           <div>
             <h3 className={`text-xl font-bold ${isBulkMode ? 'text-white' : 'text-slate-800'}`}>
-              {isBulkMode
-                ? `Bulk eTIMS Update`
-                : isEditMode
-                  ? `Update Details & Adjustments`
-                  : `Invoice #INV-${singleSale.id.toString().padStart(4, '0')}`
-              }
+              {isBulkMode ? `Bulk eTIMS Update` : isEditMode ? `Update Details & Adjustments` : `Invoice #INV-${singleSale.id.toString().padStart(4, '0')}`}
             </h3>
             <p className={`text-xs ${isBulkMode ? 'text-indigo-200' : 'text-slate-500'}`}>
               {isBulkMode
                 ? `Applying same eTIMS details to ${bulkSales.length} invoice${bulkSales.length !== 1 ? 's' : ''}`
-                : `Customer: ${singleSale.customer?.name || (singleSale.patient ? `${singleSale.patient.firstName} ${singleSale.patient.lastName}` : "Walk-in")}`
-              }
+                : `Customer: ${singleSale.customer?.name || (singleSale.patient ? `${singleSale.patient.firstName} ${singleSale.patient.lastName}` : "Walk-in")}`}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className={`p-2 rounded-full transition-colors ${isBulkMode ? 'hover:bg-white/20 text-white' : 'hover:bg-slate-200'}`}
-          >
+          <button onClick={onClose} className={`p-2 rounded-full transition-colors ${isBulkMode ? 'hover:bg-white/20 text-white' : 'hover:bg-slate-200'}`}>
             <X size={20} />
           </button>
         </div>
@@ -96,17 +104,40 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
         <form onSubmit={handleSubmit}>
           <div className="p-6 max-h-[70vh] overflow-y-auto space-y-6">
 
-            {/* --- BULK: Warning / Info Banner --- */}
             {isBulkMode && (
               <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
                 <AlertCircle size={18} className="text-amber-500 mt-0.5 shrink-0" />
                 <p className="text-sm text-amber-800">
-                  The eTIMS details below will <span className="font-bold">overwrite</span> any existing eTIMS data on all {bulkSales.length} selected invoices.
+                  The eTIMS details below will <span className="font-bold">overwrite</span> any existing data on all {bulkSales.length} selected records.
                 </p>
               </div>
             )}
 
-            {/* --- EDITABLE ADJUSTMENTS SECTION (Single Edit Mode Only) --- */}
+            {/* Bulk Percent Input */}
+            {isBulkMode && (
+              <div className="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4">
+                <div className="flex items-center gap-2 font-bold mb-3 text-sm text-indigo-800">
+                  <Percent size={18} />
+                  <span>Bulk Invoice Adjustments</span>
+                </div>
+                <div className="space-y-1 max-w-xs">
+                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Apply Global Discount (%)</p>
+                  <div className="relative flex items-center">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      className="w-full pl-3 pr-8 py-2 bg-white border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm text-slate-700"
+                      placeholder="e.g. 10"
+                      value={formData.bulkDiscountPercent}
+                      onChange={(e) => setFormData({ ...formData, bulkDiscountPercent: e.target.value })}
+                    />
+                    <span className="absolute right-3 text-slate-400 text-sm font-bold">%</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {isEditMode && (
               <div className="bg-amber-50/60 border border-amber-100 rounded-2xl p-4">
                 <div className="flex items-center gap-2 font-bold mb-3 text-sm text-amber-800">
@@ -120,7 +151,6 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
                       type="number"
                       min="0"
                       className="w-full px-3 py-2 bg-white border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-bold text-sm text-slate-700"
-                      placeholder="e.g. 500"
                       value={formData.discount}
                       onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
                     />
@@ -131,7 +161,6 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
                       type="number"
                       min="0"
                       className="w-full px-3 py-2 bg-white border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-bold text-sm text-slate-700"
-                      placeholder="e.g. 250"
                       value={formData.miscellaneous}
                       onChange={(e) => setFormData({ ...formData, miscellaneous: e.target.value })}
                     />
@@ -140,7 +169,7 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
               </div>
             )}
 
-            {/* --- eTIMS SECTION --- */}
+            {/* eTIMS Input Section */}
             <div className={`${isBulkMode || isEditMode ? 'bg-indigo-50 border-indigo-100' : 'bg-emerald-50 border-emerald-100'} border rounded-2xl p-4 transition-colors`}>
               <div className={`flex items-center gap-2 font-bold mb-4 text-sm ${isBulkMode || isEditMode ? 'text-indigo-700' : 'text-emerald-700'}`}>
                 {isBulkMode ? <Layers size={18} /> : isEditMode ? <Receipt size={18} /> : <BadgeCheck size={18} />}
@@ -175,7 +204,6 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
                     <input
                       type="number"
                       className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm"
-                      placeholder={isBulkMode ? 'Enter amount for all invoices' : ''}
                       value={formData.etimsAmount}
                       onChange={(e) => setFormData({ ...formData, etimsAmount: e.target.value })}
                     />
@@ -184,7 +212,7 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
               </div>
             </div>
 
-            {/* --- BULK: Selected Invoices Summary --- */}
+            {/* Bulk Selection Table */}
             {isBulkMode && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-slate-600 font-bold text-sm">
@@ -199,43 +227,37 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
                       <tr>
                         <th className="px-4 py-3">Invoice</th>
                         <th className="px-4 py-3">Customer</th>
-                        <th className="px-4 py-3 text-right">Total</th>
-                        <th className="px-4 py-3 text-center">eTIMS Status</th>
+                        <th className="px-4 py-3 text-right">Original Total</th>
+                        <th className="px-4 py-3 text-right text-indigo-700">Preview Discount</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                      {bulkSales.map(sale => (
-                        <tr key={sale.id} className="hover:bg-slate-50">
-                          <td className="px-4 py-2.5 font-mono text-xs font-bold text-indigo-600">
-                            #INV-{sale.id.toString().padStart(4, '0')}
-                          </td>
-                          <td className="px-4 py-2.5 text-slate-700 text-xs">
-                            {sale.customer?.name || (sale.patient ? `${sale.patient.firstName} ${sale.patient.lastName}` : 'Walk-in')}
-                          </td>
-                          <td className="px-4 py-2.5 text-right text-slate-700 font-bold text-xs">
-                            {Number(sale.total).toLocaleString()} KSH
-                          </td>
-                          <td className="px-4 py-2.5 text-center">
-                            {(sale.etimsReceipt || sale.etimsAmount) ? (
-                              <span className="flex items-center justify-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] uppercase tracking-tighter w-fit mx-auto">
-                                <BadgeCheck size={10} />
-                                eTIMS
-                              </span>
-                            ) : (
-                              <span className="bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full text-[9px] uppercase tracking-tighter">
-                                Pending
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      {bulkSales.map(sale => {
+                        const calculatedPreviewDiscount = Math.round((Number(formData.bulkDiscountPercent || 0) / 100) * Number(sale.total));
+                        return (
+                          <tr key={sale.id} className="hover:bg-slate-50">
+                            <td className="px-4 py-2.5 font-mono text-xs font-bold text-indigo-600">
+                              #INV-{sale.id.toString().padStart(4, '0')}
+                            </td>
+                            <td className="px-4 py-2.5 text-slate-700 text-xs">
+                              {sale.customer?.name || (sale.patient ? `${sale.patient.firstName} ${sale.patient.lastName}` : 'Walk-in')}
+                            </td>
+                            <td className="px-4 py-2.5 text-right text-slate-700 font-bold text-xs">
+                              {Number(sale.total).toLocaleString()} KSH
+                            </td>
+                            <td className="px-4 py-2.5 text-right font-black text-xs text-rose-600">
+                              {calculatedPreviewDiscount > 0 ? `-${calculatedPreviewDiscount.toLocaleString()} KSH` : '0 KSH'}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
               </div>
             )}
 
-            {/* --- SINGLE SALE: Items Table --- */}
+            {/* Single Item Purchases Table */}
             {!isBulkMode && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-slate-600 font-bold text-sm">
@@ -269,7 +291,6 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
                       ))}
                     </tbody>
                     <tfoot className="bg-slate-50/80 text-xs border-t border-slate-200">
-                      {/* View Mode Summary Breakdown */}
                       {isViewMode && (Number(singleSale.discount) > 0 || Number(singleSale.miscellaneous) > 0) && (
                         <>
                           <tr className="text-slate-500">
@@ -290,21 +311,19 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
                             <tr className="text-blue-600">
                               <td colSpan="3" className="px-4 py-1 text-right font-medium">Miscellaneous Charges</td>
                               <td className="px-4 py-1 text-right font-bold">
-                                + {Number(singleSale.miscellaneous).toLocaleString()} KSH
+                                - {Number(singleSale.miscellaneous).toLocaleString()} KSH
                               </td>
                             </tr>
                           )}
                         </>
                       )}
                       
-                      {/* Active Calculation Row */}
                       <tr className="text-sm font-bold">
                         <td colSpan="3" className="px-4 py-3 text-right text-slate-600 uppercase tracking-wider text-[10px]">Net Grand Total</td>
                         <td className="px-4 py-3 text-right text-indigo-600 text-lg font-black">
                           {isEditMode 
                             ? (calculatedGrossTotal - (Number(formData.discount) || 0) - (Number(formData.miscellaneous) || 0)).toLocaleString() 
-                            : Number(singleSale.total).toLocaleString()
-                          } <span className="text-[10px]">KSH</span>
+                            : Number(singleSale.total).toLocaleString()} <span className="text-[10px]">KSH</span>
                         </td>
                       </tr>
                     </tfoot>
@@ -316,19 +335,12 @@ export default function SaleModal({ isOpen, onClose, initialData, mode, onUpdate
 
           {/* Footer */}
           <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-all"
-            >
+            <button type="button" onClick={onClose} className="px-6 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-all">
               {isViewMode ? 'Close' : 'Cancel'}
             </button>
 
             {(isEditMode || isBulkMode) && (
-              <button
-                type="submit"
-                className="px-6 py-2 text-white bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200 rounded-xl font-bold flex items-center gap-2 shadow-lg transition-all"
-              >
+              <button type="submit" className="px-6 py-2 text-white bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200 rounded-xl font-bold flex items-center gap-2 shadow-lg transition-all">
                 {isBulkMode ? <Layers size={18} /> : <Save size={18} />}
                 {isBulkMode ? `Update ${bulkSales.length} Invoices` : 'Save Changes'}
               </button>
